@@ -1,34 +1,23 @@
 module Quiz exposing (..)
 
-import Data.Question exposing (Question)
 import Html exposing (..)
+import Html.Attributes as Attributes
+import Data.Question as Question
+import Data.Answer as Answer
 
 
---type alias Model =
---    { questionQueue : List Question
---    }
+type alias PresentingQuestionModel =
+    { currentQuestion : Question.Question
+    , questionQueue : List Question.Question
+    }
 
 
-type alias LoadingModel =
-    {}
-
-
-type alias PlayingModel =
-    {}
-
-
-type alias FinishedModel =
-    {}
-
-
-type QuizState
-    = LoadingQuizState LoadingModel
-    | PlayingQuizState PlayingModel
-    | FinishedQuizState FinishedModel
+type GameState
+    = PresentingQuestion PresentingQuestionModel
 
 
 type alias Model =
-    { state : QuizState
+    { state : GameState
     }
 
 
@@ -46,9 +35,27 @@ main =
         }
 
 
+sampleData : Question.Question
+sampleData =
+    { question = "Which nephew often wears a red hat?"
+    , answers =
+        [ Answer.Correct "Huey"
+        , Answer.Invalid "Dewey"
+        , Answer.Invalid "Louie"
+        , Answer.Invalid "Donald"
+        ]
+    }
+
+
 init : ( Model, Cmd Msg )
 init =
-    { state = LoadingQuizState LoadingModel } ! []
+    let
+        stateModel =
+            { currentQuestion = sampleData
+            , questionQueue = []
+            }
+    in
+        { state = PresentingQuestion stateModel } ! []
 
 
 subscriptions : Model -> Sub Msg
@@ -63,4 +70,5 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    text <| toString model
+    case model.state of
+        PresentingQuestion gameModel ->

@@ -1,8 +1,9 @@
 module Data.Question exposing (..)
 
+import Data.Answer exposing (Answer)
+
 
 type alias Question =
-    { title : String
-    , correctAnswer : String
-    , invalidAnswers : List String
+    { question : String
+    , answers : List Answer
     }
