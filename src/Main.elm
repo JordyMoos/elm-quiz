@@ -47,7 +47,7 @@ type GameState
 
 type Msg
     = NoOp
-    | ChosenAnswer Answer
+    | ChosenAnswer (Maybe Answer)
     | NextQuestion
 
 
@@ -101,6 +101,9 @@ sampleConfig =
                 [ CorrectAnswer "Yes"
                 ]
           }
+        , { question = "Can I get even less answers?"
+          , answers = []
+          }
         ]
     }
 
@@ -135,20 +138,20 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.game.state ) of
-        ( ChosenAnswer answer, AskingQuestionState question ) ->
+        ( ChosenAnswer maybeAnswer, AskingQuestionState question ) ->
             let
                 game =
                     model.game
 
                 answeredQuestion =
                     { question = question
-                    , chosenAnswer = Just answer
+                    , chosenAnswer = maybeAnswer
                     }
 
                 newGame =
                     { game
                         | answerHistory = answeredQuestion :: model.game.answerHistory
-                        , state = ReviewAnswerState question (Just answer)
+                        , state = ReviewAnswerState question maybeAnswer
                     }
             in
                 { model | game = newGame } ! []
@@ -197,15 +200,29 @@ view model =
 
 viewAskingQuestionState : Model -> Question -> Html Msg
 viewAskingQuestionState model question =
-    div
-        []
-        [ h1 [] [ text question.question ]
-        , div
+    let
+        buttonList =
+            case List.isEmpty question.answers of
+                True ->
+                    [ viewSkipButton ]
+
+                False ->
+                    List.map viewAnswerButton question.answers
+    in
+        div
             []
-            [ ul
-                []
-                (List.map viewAnswerButton question.answers)
+            [ h1 [] [ text question.question ]
+            , div [] [ ul [] buttonList ]
             ]
+
+
+viewSkipButton : Html Msg
+viewSkipButton =
+    li
+        []
+        [ button
+            [ onClick (ChosenAnswer Nothing) ]
+            [ text "Skip" ]
         ]
 
 
@@ -214,7 +231,7 @@ viewAnswerButton answer =
     li
         []
         [ button
-            [ onClick (ChosenAnswer answer) ]
+            [ onClick (ChosenAnswer (Just answer)) ]
             [ text <| getAnswerText answer ]
         ]
 
