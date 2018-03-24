@@ -48,6 +48,7 @@ type GameState
 type Msg
     = NoOp
     | ChosenAnswer Answer
+    | NextQuestion
 
 
 main : Program Never Model Msg
@@ -136,18 +137,42 @@ update msg model =
     case ( msg, model.game.state ) of
         ( ChosenAnswer answer, AskingQuestionState question ) ->
             let
+                game =
+                    model.game
+
                 answeredQuestion =
                     { question = question
                     , chosenAnswer = Just answer
                     }
 
-                game =
-                    model.game
-
                 newGame =
                     { game
                         | answerHistory = answeredQuestion :: model.game.answerHistory
                         , state = ReviewAnswerState question (Just answer)
+                    }
+            in
+                { model | game = newGame } ! []
+
+        ( NextQuestion, ReviewAnswerState _ _ ) ->
+            let
+                game =
+                    model.game
+
+                newQuestionQueue =
+                    List.tail game.questionQueue |> Maybe.withDefault []
+
+                newGameState =
+                    case List.head game.questionQueue of
+                        Just question ->
+                            AskingQuestionState question
+
+                        Nothing ->
+                            ConclusionState
+
+                newGame =
+                    { game
+                        | questionQueue = newQuestionQueue
+                        , state = newGameState
                     }
             in
                 { model | game = newGame } ! []
@@ -196,7 +221,46 @@ viewAnswerButton answer =
 
 viewReviewAnswerState : Model -> Question -> Maybe Answer -> Html Msg
 viewReviewAnswerState model question maybeAnswer =
-    text "View review answer state"
+    let
+        resultText =
+            case maybeAnswer of
+                Just (CorrectAnswer answer) ->
+                    String.concat
+                        [ "Your answer "
+                        , "\""
+                        , answer
+                        , "\""
+                        , " is correct!"
+                        ]
+
+                Just (InvalidAnswer answer) ->
+                    String.concat
+                        [ "We are so sorry but your answer "
+                        , "\""
+                        , answer
+                        , "\""
+                        , " is incorrect!"
+                        ]
+
+                Nothing ->
+                    "You will not get points for skipping a question!"
+
+        nextButtonText =
+            case List.head model.game.questionQueue of
+                Just _ ->
+                    "Next question"
+
+                Nothing ->
+                    "Finish"
+    in
+        div
+            []
+            [ h1 [] [ text ("Review: " ++ question.question) ]
+            , div [] [ text resultText ]
+            , div
+                []
+                [ button [ onClick NextQuestion ] [ text nextButtonText ] ]
+            ]
 
 
 viewConclusionState : Model -> Html Msg
