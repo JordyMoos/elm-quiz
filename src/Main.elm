@@ -49,6 +49,7 @@ type Msg
     = NoOp
     | ChosenAnswer (Maybe Answer)
     | NextQuestion
+    | Restart
 
 
 main : Program Never Model Msg
@@ -110,29 +111,10 @@ sampleConfig =
 
 init : ( Model, Cmd Msg )
 init =
-    let
-        currentQuestion =
-            List.head sampleConfig.providedQuestions
-
-        questionQueue =
-            List.tail sampleConfig.providedQuestions |> Maybe.withDefault []
-
-        gameState =
-            case currentQuestion of
-                Just question ->
-                    AskingQuestionState question
-
-                Nothing ->
-                    ConclusionState
-    in
-        { config = sampleConfig
-        , game =
-            { questionQueue = questionQueue
-            , answerHistory = []
-            , state = gameState
-            }
-        }
-            ! []
+    { config = sampleConfig
+    , game = createGame sampleConfig
+    }
+        ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -179,6 +161,9 @@ update msg model =
                     }
             in
                 { model | game = newGame } ! []
+
+        ( Restart, _ ) ->
+            { model | game = createGame model.config } ! []
 
         ( _, _ ) ->
             -- Void on bibs
@@ -331,6 +316,10 @@ viewConclusionState model =
                 , li [] [ text <| "Invalid: " ++ (toString invalid) ]
                 , li [] [ text <| "Skipped: " ++ (toString skipped) ]
                 ]
+            , div
+                []
+                [ button [ onClick Restart ] [ text "Try again!" ]
+                ]
             ]
 
 
@@ -346,3 +335,30 @@ getAnswerText answer =
 
         InvalidAnswer text ->
             text
+
+
+
+--- Other helpers
+
+
+createGame : Config -> Game
+createGame config =
+    let
+        currentQuestion =
+            List.head config.providedQuestions
+
+        questionQueue =
+            List.tail config.providedQuestions |> Maybe.withDefault []
+
+        gameState =
+            case currentQuestion of
+                Just question ->
+                    AskingQuestionState question
+
+                Nothing ->
+                    ConclusionState
+    in
+        { questionQueue = questionQueue
+        , answerHistory = []
+        , state = gameState
+        }
