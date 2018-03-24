@@ -104,10 +104,29 @@ sampleConfig =
 
 init : ( Model, Cmd Msg )
 init =
-    { config = sampleConfig
-    , game = ""
-    }
-        ! []
+    let
+        currentQuestion =
+            List.head sampleConfig.providedQuestions
+
+        questionQueue =
+            List.tail sampleConfig.providedQuestions |> Maybe.withDefault []
+
+        gameState =
+            case currentQuestion of
+                Just question ->
+                    AskingQuestionState question
+
+                Nothing ->
+                    ConclusionState
+    in
+        { config = sampleConfig
+        , game =
+            { questionQueue = questionQueue
+            , answerHistory = []
+            , state = gameState
+            }
+        }
+            ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
