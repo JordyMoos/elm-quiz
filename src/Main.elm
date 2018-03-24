@@ -282,7 +282,56 @@ viewReviewAnswerState model question maybeAnswer =
 
 viewConclusionState : Model -> Html Msg
 viewConclusionState model =
-    text "View conclusion state"
+    let
+        correct =
+            List.filter
+                (\answeredQuestion ->
+                    case answeredQuestion.chosenAnswer of
+                        Just (CorrectAnswer _) ->
+                            True
+
+                        _ ->
+                            False
+                )
+                model.game.answerHistory
+                |> List.length
+
+        invalid =
+            List.filter
+                (\answeredQuestion ->
+                    case answeredQuestion.chosenAnswer of
+                        Just (InvalidAnswer _) ->
+                            True
+
+                        _ ->
+                            False
+                )
+                model.game.answerHistory
+                |> List.length
+
+        skipped =
+            List.filter
+                (\answeredQuestion ->
+                    case answeredQuestion.chosenAnswer of
+                        Nothing ->
+                            True
+
+                        _ ->
+                            False
+                )
+                model.game.answerHistory
+                |> List.length
+    in
+        div
+            []
+            [ h1 [] [ text ("Report") ]
+            , ul
+                []
+                [ li [] [ text <| "Correct: " ++ (toString correct) ]
+                , li [] [ text <| "Invalid: " ++ (toString invalid) ]
+                , li [] [ text <| "Skipped: " ++ (toString skipped) ]
+                ]
+            ]
 
 
 
