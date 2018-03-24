@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Html exposing (..)
+import Html.Events exposing (onClick)
 
 
 type alias Model =
@@ -33,7 +34,7 @@ type alias Game =
 
 
 type alias AnsweredQuestion =
-    { question : String
+    { question : Question
     , chosenAnswer : Maybe Answer -- You could skip the question
     }
 
@@ -46,6 +47,7 @@ type GameState
 
 type Msg
     = NoOp
+    | ChosenAnswer Answer
 
 
 main : Program Never Model Msg
@@ -131,9 +133,86 @@ init =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    model ! []
+    case ( msg, model.game.state ) of
+        ( ChosenAnswer answer, AskingQuestionState question ) ->
+            let
+                answeredQuestion =
+                    { question = question
+                    , chosenAnswer = Just answer
+                    }
+
+                game =
+                    model.game
+
+                newGame =
+                    { game
+                        | answerHistory = answeredQuestion :: model.game.answerHistory
+                        , state = ReviewAnswerState question (Just answer)
+                    }
+            in
+                { model | game = newGame } ! []
+
+        ( _, _ ) ->
+            -- Void on bibs
+            model ! []
 
 
 view : Model -> Html Msg
 view model =
-    text <| toString model
+    case model.game.state of
+        AskingQuestionState question ->
+            viewAskingQuestionState model question
+
+        ReviewAnswerState question maybeAnswer ->
+            viewReviewAnswerState model question maybeAnswer
+
+        ConclusionState ->
+            viewConclusionState model
+
+
+viewAskingQuestionState : Model -> Question -> Html Msg
+viewAskingQuestionState model question =
+    div
+        []
+        [ h1 [] [ text question.question ]
+        , div
+            []
+            [ ul
+                []
+                (List.map viewAnswerButton question.answers)
+            ]
+        ]
+
+
+viewAnswerButton : Answer -> Html Msg
+viewAnswerButton answer =
+    li
+        []
+        [ button
+            [ onClick (ChosenAnswer answer) ]
+            [ text <| getAnswerText answer ]
+        ]
+
+
+viewReviewAnswerState : Model -> Question -> Maybe Answer -> Html Msg
+viewReviewAnswerState model question maybeAnswer =
+    text "View review answer state"
+
+
+viewConclusionState : Model -> Html Msg
+viewConclusionState model =
+    text "View conclusion state"
+
+
+
+--- Answer helpers
+
+
+getAnswerText : Answer -> String
+getAnswerText answer =
+    case answer of
+        CorrectAnswer text ->
+            text
+
+        InvalidAnswer text ->
+            text
