@@ -392,7 +392,7 @@ createGame config =
                         |> Random.generate ProvidingQuestions
                     )
 
-                ( _, firstQuestion :: otherQuestions ) ->
+                ( False, firstQuestion :: otherQuestions ) ->
                     ( { questionQueue = otherQuestions
                       , answerHistory = []
                       , state = AskingQuestionState firstQuestion
