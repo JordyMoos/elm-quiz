@@ -2,6 +2,8 @@ module Main exposing (main)
 
 import Html exposing (..)
 import Html.Events exposing (onClick)
+import Random.List
+import Random
 
 
 type alias Model =
@@ -23,6 +25,7 @@ type alias Question =
 
 type alias Config =
     { providedQuestions : List Question
+    , shuffleQuestions : Bool
     }
 
 
@@ -40,13 +43,15 @@ type alias AnsweredQuestion =
 
 
 type GameState
-    = AskingQuestionState Question
+    = ShufflingQuestionsState
+    | AskingQuestionState Question
     | ReviewAnswerState Question (Maybe Answer)
     | ConclusionState
 
 
 type Msg
     = NoOp
+    | ProvidingQuestions (List Question)
     | ChosenAnswer (Maybe Answer)
     | NextQuestion
     | Restart
@@ -106,20 +111,31 @@ sampleConfig =
           , answers = []
           }
         ]
+    , shuffleQuestions = False
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    { config = sampleConfig
-    , game = createGame sampleConfig
-    }
-        ! []
+    createGame sampleConfig
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.game.state ) of
+        ( ProvidingQuestions (firstQuestion :: otherQuestions), ShufflingQuestionsState ) ->
+            let
+                game =
+                    model.game
+
+                newGame =
+                    { game
+                        | state = AskingQuestionState firstQuestion
+                        , questionQueue = otherQuestions
+                    }
+            in
+                { model | game = newGame } ! []
+
         ( ChosenAnswer maybeAnswer, AskingQuestionState question ) ->
             let
                 game =
@@ -163,7 +179,7 @@ update msg model =
                 { model | game = newGame } ! []
 
         ( Restart, _ ) ->
-            { model | game = createGame model.config } ! []
+            createGame model.config
 
         ( _, _ ) ->
             -- Void on bibs
@@ -173,6 +189,9 @@ update msg model =
 view : Model -> Html Msg
 view model =
     case model.game.state of
+        ShufflingQuestionsState ->
+            viewShufflingQuestions model
+
         AskingQuestionState question ->
             viewAskingQuestionState model question
 
@@ -181,6 +200,14 @@ view model =
 
         ConclusionState ->
             viewConclusionState model
+
+
+viewShufflingQuestions : Model -> Html Msg
+viewShufflingQuestions model =
+    div
+        []
+        [ h1 [] [ text "Preparing questions... please wait!" ]
+        ]
 
 
 viewAskingQuestionState : Model -> Question -> Html Msg
@@ -341,24 +368,40 @@ getAnswerText answer =
 --- Other helpers
 
 
-createGame : Config -> Game
+createGame : Config -> ( Model, Cmd Msg )
 createGame config =
     let
-        currentQuestion =
-            List.head config.providedQuestions
+        ( game, cmd ) =
+            case ( config.shuffleQuestions, config.providedQuestions ) of
+                ( _, [] ) ->
+                    -- No questions
+                    ( { questionQueue = []
+                      , answerHistory = []
+                      , state = ConclusionState
+                      }
+                    , Cmd.none
+                    )
 
-        questionQueue =
-            List.tail config.providedQuestions |> Maybe.withDefault []
+                ( True, questions ) ->
+                    -- Shuffle questions
+                    ( { questionQueue = []
+                      , answerHistory = []
+                      , state = ShufflingQuestionsState
+                      }
+                    , Random.List.shuffle config.providedQuestions
+                        |> Random.generate ProvidingQuestions
+                    )
 
-        gameState =
-            case currentQuestion of
-                Just question ->
-                    AskingQuestionState question
-
-                Nothing ->
-                    ConclusionState
+                ( _, firstQuestion :: otherQuestions ) ->
+                    ( { questionQueue = otherQuestions
+                      , answerHistory = []
+                      , state = AskingQuestionState firstQuestion
+                      }
+                    , Cmd.none
+                    )
     in
-        { questionQueue = questionQueue
-        , answerHistory = []
-        , state = gameState
-        }
+        ( { config = config
+          , game = game
+          }
+        , cmd
+        )
