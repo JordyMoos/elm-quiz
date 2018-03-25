@@ -1,4 +1,4 @@
-module Main exposing (main)
+module Quiz exposing (main)
 
 import Html exposing (..)
 import Html.Events exposing (onClick)
