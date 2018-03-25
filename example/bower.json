@@ -28,6 +28,7 @@
     "iron-pages": "polymerelements/iron-pages#^2.0.0",
     "iron-selector": "polymerelements/iron-selector#^2.0.0",
     "paper-icon-button": "polymerelements/paper-icon-button#^2.0.0",
-    "paper-spinner": "polymerelements/paper-spinner#^2.0.0"
+    "paper-spinner": "polymerelements/paper-spinner#^2.0.0",
+    "paper-button": "PolymerElements/paper-button#^2.1.0"
   }
 }

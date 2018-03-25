@@ -2,6 +2,7 @@ module Quiz exposing (main)
 
 import Html exposing (..)
 import Html.Events exposing (onClick)
+import Html.Attributes as Attributes
 import Random.List
 import Random
 
@@ -230,22 +231,12 @@ viewAskingQuestionState model question =
 
 viewSkipButton : Html Msg
 viewSkipButton =
-    li
-        []
-        [ button
-            [ onClick (ChosenAnswer Nothing) ]
-            [ text "Skip" ]
-        ]
+    li [] [ paperButton (ChosenAnswer Nothing) "Skip" ]
 
 
 viewAnswerButton : Answer -> Html Msg
 viewAnswerButton answer =
-    li
-        []
-        [ button
-            [ onClick (ChosenAnswer (Just answer)) ]
-            [ text <| getAnswerText answer ]
-        ]
+    li [] [ paperButton (ChosenAnswer (Just answer)) (getAnswerText answer) ]
 
 
 viewReviewAnswerState : Model -> Question -> Maybe Answer -> Html Msg
@@ -288,7 +279,7 @@ viewReviewAnswerState model question maybeAnswer =
             , div [] [ text resultText ]
             , div
                 []
-                [ button [ onClick NextQuestion ] [ text nextButtonText ] ]
+                [ paperButton NextQuestion nextButtonText ]
             ]
 
 
@@ -345,8 +336,7 @@ viewConclusionState model =
                 ]
             , div
                 []
-                [ button [ onClick Restart ] [ text "Try again!" ]
-                ]
+                [ paperButton Restart "Try again!" ]
             ]
 
 
@@ -405,3 +395,14 @@ createGame config =
           }
         , cmd
         )
+
+
+
+--- Webcomponent helpers
+
+
+paperButton : Msg -> String -> Html Msg
+paperButton msg content =
+    node "paper-button"
+        [ onClick msg, Attributes.class "indigo", Attributes.attribute "raised" "raised" ]
+        [ text content ]

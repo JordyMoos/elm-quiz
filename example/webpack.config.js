@@ -59,8 +59,21 @@ module.exports = {
             }
           }
         ]
+      },
+      {
+        test: /\.css$/,
+        use: [ 'style-loader', 'css-loader' ]
       }
     ]
+  },
+  devServer: {
+    compress: true,
+    hot: true,
+    contentBase: path.resolve(__dirname, 'dist'),
+    stats: 'errors-only',
+    host: '::',
+    public: '[::1]:8888',
+    port: 8888
   },
   plugins: [
     new HtmlWebpackPlugin({
