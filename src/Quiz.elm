@@ -5,6 +5,8 @@ import Html.Events exposing (onClick)
 import Html.Attributes as Attributes
 import Random.List
 import Random
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline exposing (decode, required)
 
 
 type alias Model =
@@ -58,9 +60,9 @@ type Msg
     | Restart
 
 
-main : Program Never Model Msg
+main : Program Decode.Value Model Msg
 main =
-    Html.program
+    Html.programWithFlags
         { init = init
         , update = update
         , view = view
@@ -68,57 +70,22 @@ main =
         }
 
 
-sampleConfig : Config
-sampleConfig =
-    { providedQuestions =
-        [ { question = "Which nephew has a red hat?"
-          , answers =
-                [ CorrectAnswer "Huey"
-                , InvalidAnswer "Dewey"
-                , InvalidAnswer "Louie"
-                , InvalidAnswer "Donald"
-                ]
-          }
-        , { question = "Who is the richest of them all?"
-          , answers =
-                [ CorrectAnswer "Scrooge McDuck"
-                , InvalidAnswer "Jeff Bezos"
-                , InvalidAnswer "Bill Gates"
-                , InvalidAnswer "Warren Buffett"
-                ]
-          }
-        , { question = "Is this a trick question?"
-          , answers =
-                [ CorrectAnswer "Yes"
-                , CorrectAnswer "Yes"
-                , CorrectAnswer "Yes"
-                , CorrectAnswer "Yes"
-                ]
-          }
-        , { question = "Can I get this question right?"
-          , answers =
-                [ InvalidAnswer "No"
-                , InvalidAnswer "No"
-                , InvalidAnswer "No"
-                , InvalidAnswer "No"
-                ]
-          }
-        , { question = "Can I get less answers?"
-          , answers =
-                [ CorrectAnswer "Yes"
-                ]
-          }
-        , { question = "Can I get even less answers?"
-          , answers = []
-          }
-        ]
-    , shuffleQuestions = False
-    }
-
-
-init : ( Model, Cmd Msg )
-init =
-    createGame sampleConfig
+init : Decode.Value -> ( Model, Cmd Msg )
+init configJson =
+    let
+        config =
+            Decode.decodeValue configDecoder configJson
+                |> Result.withDefault
+                    { providedQuestions =
+                        [ { question = "You configured the config wrong did not you?"
+                          , answers =
+                                [ CorrectAnswer "Yes I did" ]
+                          }
+                        ]
+                    , shuffleQuestions = False
+                    }
+    in
+        createGame config
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -406,3 +373,45 @@ paperButton msg content =
     node "paper-button"
         [ onClick msg, Attributes.class "indigo", Attributes.attribute "raised" "raised" ]
         [ text content ]
+
+
+
+--- Decoders
+
+
+configDecoder : Decoder Config
+configDecoder =
+    decode Config
+        |> required "providedQuestions" questionsDecoder
+        |> required "shuffleQuestions" Decode.bool
+
+
+questionsDecoder : Decoder (List Question)
+questionsDecoder =
+    Decode.list questionDecoder
+
+
+questionDecoder : Decoder Question
+questionDecoder =
+    decode Question
+        |> required "question" Decode.string
+        |> required "answers" answersDecoder
+
+
+answersDecoder : Decoder (List Answer)
+answersDecoder =
+    Decode.list answerDecoder
+
+
+answerDecoder : Decoder Answer
+answerDecoder =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\theType ->
+                case theType of
+                    "correct" ->
+                        Decode.map CorrectAnswer (Decode.field "value" Decode.string)
+
+                    _ ->
+                        Decode.map InvalidAnswer (Decode.field "value" Decode.string)
+            )
