@@ -6,7 +6,7 @@ import Html.Attributes as Attributes
 import Random.List
 import Random
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (decode, required)
+import Json.Decode.Pipeline exposing (decode, required, optional)
 
 
 type alias Model =
@@ -383,7 +383,7 @@ configDecoder : Decoder Config
 configDecoder =
     decode Config
         |> required "providedQuestions" questionsDecoder
-        |> required "shuffleQuestions" Decode.bool
+        |> optional "shuffleQuestions" Decode.bool False
 
 
 questionsDecoder : Decoder (List Question)
