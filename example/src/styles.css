@@ -21,3 +21,36 @@ paper-card {
 main {
     padding: 20px;
 }
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+li {
+    padding: 0;
+    margin: 10px;
+}
+
+paper-button {
+    --paper-button-ink-color: var(--paper-pink-a200);
+    --paper-button-flat-keyboard-focus: {
+        background-color: var(--paper-pink-a200);
+        color: white !important;
+    };
+    --paper-button-raised-keyboard-focus: {
+        background-color: var(--paper-pink-a200) !important;
+        color: white !important;
+    };
+}
+paper-button.indigo:hover {
+    background-color: var(--paper-indigo-100);
+}
+paper-button.indigo {
+    background-color: var(--paper-indigo-500);
+    color: white;
+    --paper-button-raised-keyboard-focus: {
+        background-color: var(--paper-pink-a200) !important;
+        color: white !important;
+    };
+}

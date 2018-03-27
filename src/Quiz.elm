@@ -228,10 +228,9 @@ onDrawerStatusChange =
 
 viewShufflingQuestions : Model -> Html Msg
 viewShufflingQuestions model =
-    div
+    node "paper-card"
+        [ attribute "heading" "Preparing questions... please wait!" ]
         []
-        [ h1 [] [ text "Preparing questions... please wait!" ]
-        ]
 
 
 viewAskingQuestionState : Model -> Question -> Html Msg
@@ -297,13 +296,15 @@ viewReviewAnswerState model question maybeAnswer =
                 Nothing ->
                     "Finish"
     in
-        div
-            []
-            [ h1 [] [ text ("Review: " ++ question.question) ]
-            , div [] [ text resultText ]
-            , div
-                []
-                [ paperButton NextQuestion nextButtonText ]
+        node "paper-card"
+            [ attribute "heading" ("Review: " ++ question.question) ]
+            [ div
+                [ Attributes.class "card-content" ]
+                [ div [] [ text resultText ]
+                , div
+                    []
+                    [ paperButton NextQuestion nextButtonText ]
+                ]
             ]
 
 
@@ -349,18 +350,20 @@ viewConclusionState model =
                 model.game.answerHistory
                 |> List.length
     in
-        div
-            []
-            [ h1 [] [ text ("Report") ]
-            , ul
-                []
-                [ li [] [ text <| "Correct: " ++ (toString correct) ]
-                , li [] [ text <| "Invalid: " ++ (toString invalid) ]
-                , li [] [ text <| "Skipped: " ++ (toString skipped) ]
+        node "paper-card"
+            [ attribute "heading" "Report" ]
+            [ div
+                [ Attributes.class "card-content" ]
+                [ ul
+                    []
+                    [ li [] [ text <| "Correct: " ++ (toString correct) ]
+                    , li [] [ text <| "Invalid: " ++ (toString invalid) ]
+                    , li [] [ text <| "Skipped: " ++ (toString skipped) ]
+                    ]
+                , div
+                    []
+                    [ paperButton Restart "Try again!" ]
                 ]
-            , div
-                []
-                [ paperButton Restart "Try again!" ]
             ]
 
 
