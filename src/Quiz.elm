@@ -215,7 +215,32 @@ viewWrapInLayout config content =
                     ]
                 ]
             , Html.main_ [] [ content ]
-            , node "app-drawer" drawerAttributes []
+            , node "app-drawer"
+                drawerAttributes
+                [ node "app-header-layout"
+                    []
+                    [ node "app-header"
+                        [ Attributes.class "blueHeader"
+                        , attribute "waterfall" "waterfall"
+                        , attribute "fixed" "fixed"
+                        , attribute "slot" "header"
+                        ]
+                        [ node "app-toolbar"
+                            []
+                            [ div [ attribute "main-title" "main-title" ] [ text "Menu" ] ]
+                        ]
+                    , node "paper-icon-item"
+                        [ Attributes.class "iconItem", onClick (DrawerStatus False) ]
+                        [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "forward", attribute "slot" "item-icon" ] []
+                        , span [] [ text "Questions" ]
+                        ]
+                    , node "paper-icon-item"
+                        [ Attributes.class "iconItem", onClick Restart ]
+                        [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "av:fast-rewind", attribute "slot" "item-icon" ] []
+                        , span [] [ text "Restart" ]
+                        ]
+                    ]
+                ]
             ]
 
 
@@ -417,7 +442,7 @@ createGame config =
                     , Cmd.none
                     )
     in
-        ( { config = config
+        ( { config = { config | drawerOpened = False }
           , game = game
           }
         , cmd

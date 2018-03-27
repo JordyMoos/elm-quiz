@@ -1,6 +1,6 @@
 body {
     margin: 0;
-    font-family: sans-serif;
+    font-family: 'Roboto', 'Noto', sans-serif;
     background-color: #f1f1f1;
 }
 
@@ -53,4 +53,20 @@ paper-button.indigo {
         background-color: var(--paper-pink-a200) !important;
         color: white !important;
     };
+}
+
+
+
+.blueHeader {
+    background-color: #4285f4;
+    color: #fff;
+}
+.blueHeader paper-icon-button {
+    --paper-icon-button-ink-color: white;
+}
+.iconItem {
+    color: #666;
+}
+app-drawer-layout:not([narrow]) [drawer-toggle] {
+    display: none;
 }
