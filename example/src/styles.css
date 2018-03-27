@@ -1,0 +1,16 @@
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background-color: #f1f1f1;
+}
+
+app-header {
+    background-color: #00897B;
+    color: #fff;
+}
+paper-icon-button {
+    --paper-icon-button-ink-color: white;
+}
+app-drawer-layout:not([narrow]) [drawer-toggle] {
+    display: none;
+}

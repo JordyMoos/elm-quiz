@@ -4,6 +4,10 @@ import './styles.css';
 import '../bower_components/paper-styles/color.html';
 import '../bower_components/paper-styles/paper-styles.html';
 import '../bower_components/paper-button/paper-button.html';
+import '../bower_components/app-layout/app-layout.html';
+import '../bower_components/iron-icons/iron-icons.html';
+import '../bower_components/paper-icon-button/paper-icon-button.html';
+import '../bower_components/paper-card/paper-card.html';
 
 
 let app = Elm.Quiz.fullscreen({

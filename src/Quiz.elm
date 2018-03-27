@@ -1,8 +1,8 @@
 module Quiz exposing (main)
 
 import Html exposing (..)
-import Html.Events exposing (onClick)
-import Html.Attributes as Attributes
+import Html.Events as Events exposing (onClick)
+import Html.Attributes as Attributes exposing (attribute)
 import Random.List
 import Random
 import Json.Decode as Decode exposing (Decoder)
@@ -29,6 +29,7 @@ type alias Question =
 type alias Config =
     { providedQuestions : List Question
     , shuffleQuestions : Bool
+    , drawerOpened : Bool
     }
 
 
@@ -54,6 +55,7 @@ type GameState
 
 type Msg
     = NoOp
+    | DrawerStatus Bool
     | ProvidingQuestions (List Question)
     | ChosenAnswer (Maybe Answer)
     | NextQuestion
@@ -83,6 +85,7 @@ init configJson =
                           }
                         ]
                     , shuffleQuestions = False
+                    , drawerOpened = False
                     }
     in
         createGame config
@@ -91,6 +94,16 @@ init configJson =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.game.state ) of
+        ( DrawerStatus status, _ ) ->
+            let
+                config =
+                    model.config
+
+                newConfig =
+                    { config | drawerOpened = status }
+            in
+                { model | config = newConfig } ! []
+
         ( ProvidingQuestions (firstQuestion :: otherQuestions), ShufflingQuestionsState ) ->
             let
                 game =
@@ -156,7 +169,7 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    case model.game.state of
+    (case model.game.state of
         ShufflingQuestionsState ->
             viewShufflingQuestions model
 
@@ -168,6 +181,49 @@ view model =
 
         ConclusionState ->
             viewConclusionState model
+    )
+        |> viewWrapInLayout model.config
+
+
+viewWrapInLayout : Config -> Html Msg -> Html Msg
+viewWrapInLayout config content =
+    let
+        drawerOpenStatus =
+            case config.drawerOpened of
+                True ->
+                    [ attribute "opened" "opened" ]
+
+                False ->
+                    []
+
+        drawerAttributes =
+            List.append
+                drawerOpenStatus
+                [ Attributes.id "drawer"
+                , attribute "swipe-open" "swipe-open"
+                , onDrawerStatusChange
+                ]
+    in
+        div
+            []
+            [ node "app-header"
+                [ attribute "reveals" "reveals" ]
+                [ node "app-toolbar"
+                    []
+                    [ node "paper-icon-button" [ attribute "icon" "menu", onClick (DrawerStatus True) ] []
+                    , div [ attribute "main-title" "main-title" ] [ text "Elm Quiz!" ]
+                    ]
+                ]
+            , node "app-drawer" drawerAttributes []
+            , content
+            ]
+
+
+onDrawerStatusChange : Attribute Msg
+onDrawerStatusChange =
+    Events.on "opened-changed" <|
+        Decode.map DrawerStatus
+            (Decode.at [ "detail", "value" ] Decode.bool)
 
 
 viewShufflingQuestions : Model -> Html Msg
@@ -189,10 +245,11 @@ viewAskingQuestionState model question =
                 False ->
                     List.map viewAnswerButton question.answers
     in
-        div
-            []
-            [ h1 [] [ text question.question ]
-            , div [] [ ul [] buttonList ]
+        node "paper-card"
+            [ attribute "heading" question.question ]
+            [ div
+                [ Attributes.class "card-content" ]
+                [ ul [] buttonList ]
             ]
 
 
@@ -384,6 +441,7 @@ configDecoder =
     decode Config
         |> required "providedQuestions" questionsDecoder
         |> optional "shuffleQuestions" Decode.bool False
+        |> optional "drawerOpened" Decode.bool False
 
 
 questionsDecoder : Decoder (List Question)
