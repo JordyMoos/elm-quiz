@@ -14,3 +14,10 @@ paper-icon-button {
 app-drawer-layout:not([narrow]) [drawer-toggle] {
     display: none;
 }
+
+paper-card {
+    width:  100%;
+}
+main {
+    padding: 20px;
+}

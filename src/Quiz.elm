@@ -214,8 +214,8 @@ viewWrapInLayout config content =
                     , div [ attribute "main-title" "main-title" ] [ text "Elm Quiz!" ]
                     ]
                 ]
+            , Html.main_ [] [ content ]
             , node "app-drawer" drawerAttributes []
-            , content
             ]
 
 
