@@ -300,7 +300,7 @@ viewReviewAnswerState model question maybeAnswer =
             [ attribute "heading" ("Review: " ++ question.question) ]
             [ div
                 [ Attributes.class "card-content" ]
-                [ div [] [ text resultText ]
+                [ p [] [ text resultText ]
                 , div
                     []
                     [ paperButton NextQuestion nextButtonText ]
