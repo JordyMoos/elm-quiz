@@ -7,6 +7,7 @@ import Random.List
 import Random
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (decode, required, optional)
+import Maybe.Extra
 
 
 type alias Model =
@@ -228,7 +229,7 @@ viewWrapInLayout { config, guiState } content =
                         ]
                     , node "paper-icon-item"
                         [ Attributes.class "iconItem", onClick (DrawerStatus False) ]
-                        [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "forward", attribute "slot" "item-icon" ] []
+                        [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "done", attribute "slot" "item-icon" ] []
                         , span [] [ text "Questions" ]
                         ]
                     , node "paper-icon-item"
@@ -287,7 +288,7 @@ viewAnswerButton answer =
 viewReviewAnswerState : Model -> Question -> Maybe Answer -> Html Msg
 viewReviewAnswerState model question maybeAnswer =
     let
-        resultText =
+        resultHtml =
             case maybeAnswer of
                 Just (CorrectAnswer answer) ->
                     String.concat
@@ -297,18 +298,51 @@ viewReviewAnswerState model question maybeAnswer =
                         , "\""
                         , " is correct!"
                         ]
+                        |> text
 
                 Just (InvalidAnswer answer) ->
-                    String.concat
-                        [ "We are so sorry but your answer "
-                        , "\""
-                        , answer
-                        , "\""
-                        , " is incorrect!"
-                        ]
+                    let
+                        invalidAnswerMessage =
+                            String.concat
+                                [ "We are so sorry but your answer "
+                                , "\""
+                                , answer
+                                , "\""
+                                , " is incorrect!"
+                                ]
+
+                        correctAnswers =
+                            List.map
+                                (\answer ->
+                                    case answer of
+                                        CorrectAnswer value ->
+                                            Just value
+
+                                        _ ->
+                                            Nothing
+                                )
+                                question.answers
+                                |> Maybe.Extra.values
+
+                        correctAnswersMessage =
+                            case correctAnswers of
+                                [] ->
+                                    "There where no correct answers"
+
+                                answer :: [] ->
+                                    "The correct answer was: " ++ answer
+
+                                answers ->
+                                    "The correct answers where: " ++ (String.join ", " answers)
+                    in
+                        div
+                            []
+                            [ p [] [ text invalidAnswerMessage ]
+                            , p [] [ text correctAnswersMessage ]
+                            ]
 
                 Nothing ->
-                    "You will not get points for skipping a question!"
+                    "You will not get points for skipping a question!" |> text
 
         nextButtonText =
             case List.head model.game.questionQueue of
@@ -322,9 +356,9 @@ viewReviewAnswerState model question maybeAnswer =
             [ attribute "heading" ("Review: " ++ question.question) ]
             [ div
                 [ Attributes.class "card-content" ]
-                [ p [] [ text resultText ]
+                [ p [] [ resultHtml ]
                 , div
-                    []
+                    [ Attributes.class "continue-button-container" ]
                     [ paperButton NextQuestion nextButtonText ]
                 ]
             ]
@@ -383,7 +417,7 @@ viewConclusionState model =
                     , li [] [ text <| "Skipped: " ++ (toString skipped) ]
                     ]
                 , div
-                    []
+                    [ Attributes.class "continue-button-container" ]
                     [ paperButton Restart "Try again!" ]
                 ]
             ]
