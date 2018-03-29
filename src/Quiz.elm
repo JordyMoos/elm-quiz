@@ -1,5 +1,16 @@
 module Quiz exposing (main)
 
+{-| A customizable quiz powered by Elm and Polymer
+
+See the example on github.
+
+
+# Quiz
+
+@docs main
+
+-}
+
 import Html exposing (..)
 import Html.Events as Events exposing (onClick)
 import Html.Attributes as Attributes exposing (attribute)
@@ -69,6 +80,11 @@ type Msg
     | Restart
 
 
+{-| Start of the Quiz
+
+It just calls Html.programWithFlags
+
+-}
 main : Program Decode.Value Model Msg
 main =
     Html.programWithFlags
