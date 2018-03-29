@@ -12,6 +12,7 @@ import Json.Decode.Pipeline exposing (decode, required, optional)
 type alias Model =
     { config : Config
     , game : Game
+    , guiState : GuiState
     }
 
 
@@ -30,7 +31,11 @@ type alias Config =
     { providedQuestions : List Question
     , shuffleQuestions : Bool
     , title : String
-    , drawerOpened : Bool
+    }
+
+
+type alias GuiState =
+    { drawerOpened : Bool
     }
 
 
@@ -78,17 +83,7 @@ init configJson =
     let
         config =
             Decode.decodeValue configDecoder configJson
-                |> Result.withDefault
-                    { providedQuestions =
-                        [ { question = "You configured the config wrong did not you?"
-                          , answers =
-                                [ CorrectAnswer "Yes I did" ]
-                          }
-                        ]
-                    , shuffleQuestions = False
-                    , title = "Elm Quiz!"
-                    , drawerOpened = False
-                    }
+                |> Result.withDefault defaultConfig
     in
         createGame config
 
@@ -98,13 +93,13 @@ update msg model =
     case ( msg, model.game.state ) of
         ( DrawerStatus status, _ ) ->
             let
-                config =
-                    model.config
+                guiState =
+                    model.guiState
 
-                newConfig =
-                    { config | drawerOpened = status }
+                newGuiState =
+                    { guiState | drawerOpened = status }
             in
-                { model | config = newConfig } ! []
+                { model | guiState = newGuiState } ! []
 
         ( ProvidingQuestions (firstQuestion :: otherQuestions), ShufflingQuestionsState ) ->
             let
@@ -184,14 +179,14 @@ view model =
         ConclusionState ->
             viewConclusionState model
     )
-        |> viewWrapInLayout model.config
+        |> viewWrapInLayout model
 
 
-viewWrapInLayout : Config -> Html Msg -> Html Msg
-viewWrapInLayout config content =
+viewWrapInLayout : Model -> Html Msg -> Html Msg
+viewWrapInLayout { config, guiState } content =
     let
         drawerOpenStatus =
-            case config.drawerOpened of
+            case guiState.drawerOpened of
                 True ->
                     [ attribute "opened" "opened" ]
 
@@ -395,6 +390,29 @@ viewConclusionState model =
 
 
 
+--- Default stuff
+
+
+defaultGuiState : GuiState
+defaultGuiState =
+    { drawerOpened = False
+    }
+
+
+defaultConfig : Config
+defaultConfig =
+    { providedQuestions =
+        [ { question = "You configured the config wrong did not you?"
+          , answers =
+                [ CorrectAnswer "Yes I did" ]
+          }
+        ]
+    , shuffleQuestions = False
+    , title = "Elm Quiz!"
+    }
+
+
+
 --- Answer helpers
 
 
@@ -444,8 +462,9 @@ createGame config =
                     , Cmd.none
                     )
     in
-        ( { config = { config | drawerOpened = False }
+        ( { config = config
           , game = game
+          , guiState = defaultGuiState
           }
         , cmd
         )
@@ -472,7 +491,6 @@ configDecoder =
         |> required "providedQuestions" questionsDecoder
         |> optional "shuffleQuestions" Decode.bool False
         |> optional "title" Decode.string "Elm Quiz!"
-        |> optional "drawerOpened" Decode.bool False
 
 
 questionsDecoder : Decoder (List Question)
