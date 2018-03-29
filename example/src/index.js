@@ -62,5 +62,6 @@ let app = Elm.Quiz.fullscreen({
       answers: [],
     }
   ],
-  shuffleQuestions: false
+  shuffleQuestions: false,
+  title: 'Super epic title!'
 });

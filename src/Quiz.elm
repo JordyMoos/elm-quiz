@@ -29,6 +29,7 @@ type alias Question =
 type alias Config =
     { providedQuestions : List Question
     , shuffleQuestions : Bool
+    , title : String
     , drawerOpened : Bool
     }
 
@@ -85,6 +86,7 @@ init configJson =
                           }
                         ]
                     , shuffleQuestions = False
+                    , title = "Elm Quiz!"
                     , drawerOpened = False
                     }
     in
@@ -211,7 +213,7 @@ viewWrapInLayout config content =
                 [ node "app-toolbar"
                     []
                     [ node "paper-icon-button" [ attribute "icon" "menu", onClick (DrawerStatus True) ] []
-                    , div [ attribute "main-title" "main-title" ] [ text "Elm Quiz!" ]
+                    , div [ attribute "main-title" "main-title" ] [ text config.title ]
                     ]
                 ]
             , Html.main_ [] [ content ]
@@ -469,6 +471,7 @@ configDecoder =
     decode Config
         |> required "providedQuestions" questionsDecoder
         |> optional "shuffleQuestions" Decode.bool False
+        |> optional "title" Decode.string "Elm Quiz!"
         |> optional "drawerOpened" Decode.bool False
 
 
