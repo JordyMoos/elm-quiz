@@ -1,4 +1,11 @@
-module Quiz exposing (main, Model, Msg(..))
+module Quiz
+    exposing
+        ( Msg
+        , Quiz
+        , init
+        , update
+        , view
+        )
 
 {-| A customizable quiz powered by Elm and Polymer
 
@@ -24,6 +31,10 @@ import Maybe.Extra
 
 {-| The Model
 -}
+type Quiz
+    = Quiz Model
+
+
 type alias Model =
     { config : Config
     , game : Game
@@ -85,22 +96,7 @@ type Msg
     | Restart
 
 
-{-| Start of the Quiz
-
-It just calls Html.programWithFlags
-
--}
-main : Program Decode.Value Model Msg
-main =
-    Html.programWithFlags
-        { init = init
-        , update = update
-        , view = view
-        , subscriptions = always Sub.none
-        }
-
-
-init : Decode.Value -> ( Model, Cmd Msg )
+init : Decode.Value -> ( Quiz, Cmd Msg )
 init configJson =
     let
         config =
@@ -108,10 +104,17 @@ init configJson =
                 |> Result.withDefault defaultConfig
     in
         createGame config
+            |> wrapModel
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Msg -> Quiz -> ( Quiz, Cmd Msg )
+update msg (Quiz model) =
+    innerUpdate msg model
+        |> wrapModel
+
+
+innerUpdate : Msg -> Model -> ( Model, Cmd Msg )
+innerUpdate msg model =
     case ( msg, model.game.state ) of
         ( DrawerStatus status, _ ) ->
             let
@@ -186,8 +189,8 @@ update msg model =
             model ! []
 
 
-view : Model -> Html Msg
-view model =
+view : Quiz -> Html Msg
+view (Quiz model) =
     (case model.game.state of
         ShufflingQuestionsState ->
             viewShufflingQuestions model
@@ -483,6 +486,11 @@ getAnswerText answer =
 
 
 --- Other helpers
+
+
+wrapModel : ( Model, Cmd Msg ) -> ( Quiz, Cmd Msg )
+wrapModel ( model, cmd ) =
+    ( Quiz model, cmd )
 
 
 createGame : Config -> ( Model, Cmd Msg )

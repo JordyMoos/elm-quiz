@@ -1,4 +1,4 @@
-const Elm = require('./../../src/Quiz.elm');
+const Elm = require('./elm/Main.elm');
 
 import Config from 'Config';
 import './styles.scss';
@@ -14,4 +14,4 @@ import '../bower_components/paper-item/paper-item.html';
 import '../bower_components/iron-icons/av-icons.html';
 
 
-let app = Elm.Quiz.fullscreen(Config);
+let app = Elm.Main.fullscreen(Config);

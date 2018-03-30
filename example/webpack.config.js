@@ -52,17 +52,6 @@ const common = {
                 ]
             },
             {
-                test: /\.js$/,
-                // exclude: /node_modules/, // Bugged
-                use: {
-                    loader: 'babel-loader',
-                    options: {
-                        // env: automatically determines the Babel plugins you need based on your supported environments
-                        presets: ['env']
-                    }
-                }
-            },
-            {
                 test: /\.scss$/,
                 exclude: [
                     /elm-stuff/, /node_modules/
@@ -129,6 +118,17 @@ if (TARGET_ENV === 'development') {
                             }
                         }
                     ]
+                },
+                {
+                    test: /\.js$/,
+                    exclude: /node_modules/,
+                    use: {
+                        loader: 'babel-loader',
+                        options: {
+                            // env: automatically determines the Babel plugins you need based on your supported environments
+                            presets: ['env']
+                        }
+                    }
                 }
             ]
         },
@@ -158,6 +158,17 @@ if (TARGET_ENV === 'production') {
                             loader: "elm-webpack-loader",
                         }
                     ]
+                },
+                {
+                    test: /\.js$/,
+                    // exclude: /node_modules/,
+                    use: {
+                        loader: 'babel-loader',
+                        options: {
+                            // env: automatically determines the Babel plugins you need based on your supported environments
+                            presets: ['env']
+                        }
+                    }
                 }
             ]
         }

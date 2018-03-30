@@ -4,6 +4,7 @@
     "repository": "https://github.com/JordyMoos/elm-quiz.git",
     "license": "MIT",
     "source-directories": [
+        "./src/elm",
         "./../src"
     ],
     "exposed-modules": [],
