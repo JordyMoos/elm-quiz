@@ -14,7 +14,7 @@ See the example on github.
 
 # Quiz
 
-@docs Msg, Quiz,
+@docs Msg, Quiz
 @docs init, update, view
 
 -}
