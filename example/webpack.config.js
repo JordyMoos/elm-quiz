@@ -1,91 +1,171 @@
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
+const merge = require('webpack-merge');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HTMLWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackInlineSourcePlugin = require('html-webpack-inline-source-plugin');
+const WebpackPwaManifest = require('webpack-pwa-manifest');
+const path = require('path');
+const appConfig = require('./config.json');
 
-module.exports = {
-  entry: path.resolve(__dirname, 'src/index.js'),
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js'
-  },
-  resolve: {
-    modules: [
-      path.resolve(__dirname, 'node_modules'),
-      path.resolve(__dirname, 'bower_components')
-    ]
-  },
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        exclude: /(node_modules|bower_components)/,
-        use: {
-          loader: 'babel-loader'
-        }
-      },
-      {
-        test: /\.html$/,
-        use: [
-          {
-            loader: 'babel-loader'
-          },
-          'polymer-webpack-loader'
-        ]
-      },
-      {
-        test: /\.elm$/,
-        use: [
-          {
-            loader: 'elm-hot-loader'
-          },
-          {
-            loader: 'elm-webpack-loader',
-            options: {
-              debug: true,
-              warn: false
+const TARGET_ENV = process.env.npm_lifecycle_event === 'prod'
+    ? 'production'
+    : 'development';
+const filename = (TARGET_ENV === 'production')
+    ? 'remove-me.js'
+    : 'index.js';
+
+const common = {
+    entry: './src/index.js',
+    output: {
+        path: path.join(__dirname, "dist"),
+        // add hash when building for production
+        filename: filename
+    },
+    externals: {
+        'Config': JSON.stringify(appConfig)
+    },
+    plugins: [
+        new HTMLWebpackPlugin({
+            // using .ejs prevents other loaders causing errors
+            template: 'src/index.ejs',
+            // inject details of output file at end of body
+            inject: 'body',
+            // inlineSource: '.(js|css)$'
+        }),
+
+        new CopyWebpackPlugin([{
+            from: path.resolve(__dirname, 'bower_components/webcomponentsjs/*.js'),
+            to: 'bower_components/webcomponentsjs/[name].[ext]'
+        }])
+    ],
+    resolve: {
+        modules: [
+            path.join(__dirname, "src"),
+            "node_modules"
+        ],
+        extensions: ['.js', '.elm', '.scss', '.png']
+    },
+    module: {
+        rules: [
+            {
+                test: /\.html$/,
+                use: [
+                    {
+                        loader: 'babel-loader'
+                    },
+                    'polymer-webpack-loader'
+                ]
+            },
+            {
+                test: /\.js$/,
+                // exclude: /node_modules/, // Bugged
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        // env: automatically determines the Babel plugins you need based on your supported environments
+                        presets: ['env']
+                    }
+                }
+            },
+            {
+                test: /\.scss$/,
+                exclude: [
+                    /elm-stuff/, /node_modules/
+                ],
+                loaders: ["style-loader", "css-loader", "sass-loader"]
+            },
+            {
+                test: /\.css$/,
+                exclude: [
+                    /elm-stuff/, /node_modules/
+                ],
+                loaders: ["style-loader", "css-loader"]
+            },
+            {
+                test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+                exclude: [
+                    /elm-stuff/, /node_modules/
+                ],
+                loader: "url-loader",
+                options: {
+                    limit: 10000,
+                    mimetype: "application/font-woff"
+                }
+            },
+            {
+                test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+                exclude: [
+                    /elm-stuff/, /node_modules/
+                ],
+                loader: "url-loader"
+            },
+            {
+                test: /\.(jpe?g|png|gif|svg)$/i,
+                loader: 'url-loader'
             }
-          }
         ]
-      },
-      {
-        test: /\.(gif|png|jpe?g|svg)$/i,
-        use: [
-          'file-loader?name=[name].[ext]&outputPath=/images/',
-          {
-            loader: 'image-webpack-loader',
-            options: {
-              bypassOnDebug: true
-            }
-          }
-        ]
-      },
-      {
-        test: /\.scss/,
-        use: [ 'style-loader', 'css-loader', 'sass-loader' ]
-      }
-    ]
-  },
-  devServer: {
-    compress: true,
-    hot: true,
-    contentBase: path.resolve(__dirname, 'dist'),
-    stats: 'errors-only',
-    host: '::',
-    public: '[::1]:8888',
-    port: 8888
-  },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: './src/index.ejs',
-      inject: false
-    }),
-    new CopyWebpackPlugin([{
-      from: path.resolve(__dirname, 'bower_components/webcomponentsjs/*.js'),
-      to: 'bower_components/webcomponentsjs/[name].[ext]'
-    }]),
-    new webpack.NamedModulesPlugin(),
-    new webpack.HotModuleReplacementPlugin(),
-    new webpack.NoEmitOnErrorsPlugin()
-  ]
+    }
 };
+
+if (TARGET_ENV === 'development') {
+    console.log('Building for dev...');
+    module.exports = merge(common, {
+        plugins: [
+            // Suggested for hot-loading
+            new webpack.NamedModulesPlugin(),
+            // Prevents compilation errors causing the hot loader to lose state
+            new webpack.NoEmitOnErrorsPlugin()
+        ],
+        module: {
+            rules: [
+                {
+                    test: /\.elm$/,
+                    exclude: [
+                        /elm-stuff/, /node_modules/
+                    ],
+                    use: [
+                        {
+                            loader: "elm-hot-loader"
+                        }, {
+                            loader: "elm-webpack-loader",
+                            // add Elm's debug overlay to output
+                            options: {
+                                debug: true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        devServer: {
+            inline: true,
+            stats: 'errors-only',
+            contentBase: path.resolve(__dirname, 'dist'),
+        }
+    });
+}
+
+if (TARGET_ENV === 'production') {
+    console.log('Building for prod...');
+    module.exports = merge(common, {
+        plugins: [
+            new webpack.optimize.UglifyJsPlugin(),
+            // new HtmlWebpackInlineSourcePlugin()
+        ],
+        module: {
+            rules: [
+                {
+                    test: /\.elm$/,
+                    exclude: [
+                        /elm-stuff/, /node_modules/
+                    ],
+                    use: [
+                        {
+                            loader: "elm-webpack-loader"
+                        }
+                    ]
+                }
+            ]
+        }
+    });
+}
