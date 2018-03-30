@@ -1,4 +1,4 @@
-module Quiz exposing (main)
+module Quiz exposing (main, Model, Msg(..))
 
 {-| A customizable quiz powered by Elm and Polymer
 
@@ -8,6 +8,7 @@ See the example on github.
 # Quiz
 
 @docs main
+@docs Model Msg
 
 -}
 
@@ -21,6 +22,8 @@ import Json.Decode.Pipeline exposing (decode, required, optional)
 import Maybe.Extra
 
 
+{-| The Model
+-}
 type alias Model =
     { config : Config
     , game : Game
@@ -71,6 +74,8 @@ type GameState
     | ConclusionState
 
 
+{-| The Msg
+-}
 type Msg
     = NoOp
     | DrawerStatus Bool
