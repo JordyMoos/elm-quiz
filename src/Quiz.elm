@@ -8,7 +8,7 @@ See the example on github.
 # Quiz
 
 @docs main
-@docs Model Msg
+@docs Model, Msg
 
 -}
 
