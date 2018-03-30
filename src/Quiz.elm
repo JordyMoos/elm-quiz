@@ -14,8 +14,8 @@ See the example on github.
 
 # Quiz
 
-@docs main
-@docs Model, Msg
+@docs Msg, Quiz,
+@docs init, update, view
 
 -}
 
@@ -29,7 +29,7 @@ import Json.Decode.Pipeline exposing (decode, required, optional)
 import Maybe.Extra
 
 
-{-| The Model
+{-| The Quiz model.
 -}
 type Quiz
     = Quiz Model
@@ -85,7 +85,7 @@ type GameState
     | ConclusionState
 
 
-{-| The Msg
+{-| An opaque type representing messages that are passed inside the Quiz.
 -}
 type Msg
     = NoOp
@@ -96,6 +96,50 @@ type Msg
     | Restart
 
 
+{-| Initialize a Quiz given a config as Json.Decode.Value record.
+You must always execute the returned commands.
+
+
+# Example of the config
+
+    {
+      "providedQuestions": [
+        {
+          "question": "Which nephew has a red hat?",
+          "answers": [
+            { "type": "correct", "value": "Huey"},
+            { "type": "invalid", "value": "Dewey"},
+            { "type": "invalid", "value": "Louie"},
+            { "type": "invalid", "value": "Donald"}
+          ]
+        },
+        {
+          "question": "Who is the richest of them all?",
+          "answers": [
+            { "type": "correct", "value": "Scrooge McDuck"},
+            { "type": "invalid", "value": "Jeff Bezos"},
+            { "type": "invalid", "value": "Bill Gates"},
+            { "type": "invalid", "value": "Warren Buffett"}
+          ]
+        }
+      ],
+      "shuffleQuestions": false,
+      "title": "Super epic title!"
+    }
+
+
+# Example init call
+
+    init
+        let
+            (quizModel, quizCmd) = Quiz.init config
+        in
+            { quiz = quizModel } ! [ Cmd.map ToQuiz quizCmd ]
+
+For a detailed example see
+@see example/src/elm/Main.elm
+
+-}
 init : Decode.Value -> ( Quiz, Cmd Msg )
 init configJson =
     let
@@ -107,6 +151,11 @@ init configJson =
             |> wrapModel
 
 
+{-| The quiz update function
+
+Do not forget to execute the returned command (same as for init)
+
+-}
 update : Msg -> Quiz -> ( Quiz, Cmd Msg )
 update msg (Quiz model) =
     innerUpdate msg model
@@ -189,6 +238,8 @@ innerUpdate msg model =
             model ! []
 
 
+{-| view
+-}
 view : Quiz -> Html Msg
 view (Quiz model) =
     (case model.game.state of
