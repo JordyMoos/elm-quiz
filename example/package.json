@@ -36,6 +36,6 @@
   "scripts": {
     "dev": "./node_modules/.bin/webpack-dev-server",
     "dev:build": "./node_modules/.bin/webpack -d",
-    "prod:build": "./node_modules/.bin/webpack -p"
+    "prod": "./node_modules/.bin/webpack -p"
   }
 }

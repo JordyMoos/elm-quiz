@@ -2,7 +2,6 @@ const webpack = require('webpack');
 const merge = require('webpack-merge');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HTMLWebpackPlugin = require('html-webpack-plugin');
-const HtmlWebpackInlineSourcePlugin = require('html-webpack-inline-source-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
 const path = require('path');
 const appConfig = require('./config.json');
@@ -10,16 +9,13 @@ const appConfig = require('./config.json');
 const TARGET_ENV = process.env.npm_lifecycle_event === 'prod'
     ? 'production'
     : 'development';
-const filename = (TARGET_ENV === 'production')
-    ? 'remove-me.js'
-    : 'index.js';
 
 const common = {
     entry: './src/index.js',
     output: {
         path: path.join(__dirname, "dist"),
         // add hash when building for production
-        filename: filename
+        filename: 'index.js'
     },
     externals: {
         'Config': JSON.stringify(appConfig)
@@ -30,7 +26,6 @@ const common = {
             template: 'src/index.ejs',
             // inject details of output file at end of body
             inject: 'body',
-            // inlineSource: '.(js|css)$'
         }),
 
         new CopyWebpackPlugin([{
@@ -150,7 +145,6 @@ if (TARGET_ENV === 'production') {
     module.exports = merge(common, {
         plugins: [
             new webpack.optimize.UglifyJsPlugin(),
-            // new HtmlWebpackInlineSourcePlugin()
         ],
         module: {
             rules: [
@@ -161,7 +155,7 @@ if (TARGET_ENV === 'production') {
                     ],
                     use: [
                         {
-                            loader: "elm-webpack-loader"
+                            loader: "elm-webpack-loader",
                         }
                     ]
                 }
