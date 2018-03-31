@@ -20,7 +20,7 @@ init flags =
         ( quiz, quizCmd ) =
             Quiz.init flags
     in
-        { quiz = quiz } ! []
+        { quiz = quiz } ! [ Cmd.map ToQuiz quizCmd ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

@@ -169,13 +169,10 @@ update msg (Quiz model) =
 
 
 innerUpdate : Msg -> Model -> ( Model, Cmd Msg )
-innerUpdate msg model =
+innerUpdate msg ({ config, game, guiState } as model) =
     case ( msg, model.game.state ) of
         ( DrawerStatus status, _ ) ->
             let
-                guiState =
-                    model.guiState
-
                 newGuiState =
                     { guiState | drawerOpened = status }
             in
@@ -183,9 +180,6 @@ innerUpdate msg model =
 
         ( ProvidingQuestions (firstQuestion :: otherQuestions), ShufflingQuestionsState ) ->
             let
-                game =
-                    model.game
-
                 newGame =
                     { game
                         | state = AskingQuestionState firstQuestion
@@ -196,9 +190,6 @@ innerUpdate msg model =
 
         ( ChosenAnswer maybeAnswer, AskingQuestionState question ) ->
             let
-                game =
-                    model.game
-
                 answeredQuestion =
                     { question = question
                     , chosenAnswer = maybeAnswer
@@ -214,9 +205,6 @@ innerUpdate msg model =
 
         ( NextQuestion, ReviewAnswerState _ _ ) ->
             let
-                game =
-                    model.game
-
                 newQuestionQueue =
                     List.tail game.questionQueue |> Maybe.withDefault []
 
