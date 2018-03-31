@@ -57,7 +57,13 @@ type alias Config =
     { providedQuestions : List Question
     , shuffleQuestions : Bool
     , title : String
+    , difficulty : Difficulty
     }
+
+
+type Difficulty
+    = Easy
+    | Normal
 
 
 type alias GuiState =
@@ -340,7 +346,7 @@ viewAskingQuestionState model question =
                     [ viewSkipButton ]
 
                 False ->
-                    List.map viewAnswerButton question.answers
+                    List.map (viewAnswerButton model.config.difficulty) question.answers
     in
         node "paper-card"
             [ attribute "heading" question.question ]
@@ -355,9 +361,15 @@ viewSkipButton =
     li [] [ paperButton (ChosenAnswer Nothing) "Skip" ]
 
 
-viewAnswerButton : Answer -> Html Msg
-viewAnswerButton answer =
-    li [] [ paperButton (ChosenAnswer (Just answer)) (getAnswerText answer) ]
+viewAnswerButton : Difficulty -> Answer -> Html Msg
+viewAnswerButton difficulty answer =
+    li
+        []
+        [ answerButton
+            (ChosenAnswer (Just answer))
+            (getAnswerText answer)
+            (getAnswerButtonClass difficulty answer)
+        ]
 
 
 viewReviewAnswerState : Model -> Question -> Maybe Answer -> Html Msg
@@ -518,6 +530,7 @@ defaultConfig =
         ]
     , shuffleQuestions = False
     , title = "Elm Quiz!"
+    , difficulty = Easy
     }
 
 
@@ -533,6 +546,19 @@ getAnswerText answer =
 
         InvalidAnswer text ->
             text
+
+
+getAnswerButtonClass : Difficulty -> Answer -> String
+getAnswerButtonClass difficulty answer =
+    case ( difficulty, answer ) of
+        ( Easy, CorrectAnswer _ ) ->
+            "correct"
+
+        ( Easy, InvalidAnswer _ ) ->
+            "invalid"
+
+        _ ->
+            "default"
 
 
 
@@ -590,8 +616,13 @@ createGame config =
 
 paperButton : Msg -> String -> Html Msg
 paperButton msg content =
+    answerButton msg content "default"
+
+
+answerButton : Msg -> String -> String -> Html Msg
+answerButton msg content class =
     node "paper-button"
-        [ onClick msg, Attributes.class "indigo", Attributes.attribute "raised" "raised" ]
+        [ onClick msg, Attributes.class class, Attributes.attribute "raised" "raised" ]
         [ text content ]
 
 
@@ -605,6 +636,7 @@ configDecoder =
         |> required "providedQuestions" questionsDecoder
         |> optional "shuffleQuestions" Decode.bool False
         |> optional "title" Decode.string "Elm Quiz!"
+        |> optional "difficulty" difficultyDecoder Normal
 
 
 questionsDecoder : Decoder (List Question)
@@ -635,4 +667,18 @@ answerDecoder =
 
                     _ ->
                         Decode.map InvalidAnswer (Decode.field "value" Decode.string)
+            )
+
+
+difficultyDecoder : Decoder Difficulty
+difficultyDecoder =
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "easy" ->
+                        Decode.succeed Easy
+
+                    _ ->
+                        Decode.succeed Normal
             )

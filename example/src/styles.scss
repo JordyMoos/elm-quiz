@@ -43,11 +43,33 @@ paper-button {
         color: white !important;
     };
 }
-paper-button.indigo:hover {
+paper-button.default:hover {
     background-color: var(--paper-indigo-100);
 }
-paper-button.indigo {
+paper-button.default {
     background-color: var(--paper-indigo-500);
+    color: white;
+    --paper-button-raised-keyboard-focus: {
+        background-color: var(--paper-pink-a200) !important;
+        color: white !important;
+    };
+}
+paper-button.correct:hover {
+    background-color: var(--paper-green-100);
+}
+paper-button.correct {
+    background-color: var(--paper-green-500);
+    color: white;
+    --paper-button-raised-keyboard-focus: {
+        background-color: var(--paper-pink-a200) !important;
+        color: white !important;
+    };
+}
+paper-button.invalid:hover {
+    background-color: var(--paper-red-100);
+}
+paper-button.invalid {
+    background-color: var(--paper-red-500);
     color: white;
     --paper-button-raised-keyboard-focus: {
         background-color: var(--paper-pink-a200) !important;

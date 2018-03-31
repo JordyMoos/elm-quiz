@@ -48,5 +48,6 @@
     }
   ],
   "shuffleQuestions": false,
-  "title": "Super epic title!"
+  "title": "Super epic title!",
+  "difficulty": "easy"
 }
