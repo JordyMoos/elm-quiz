@@ -2,11 +2,16 @@ module Quiz
     exposing
         ( Msg
         , Quiz
-        , init
+        , initFromJson
+        , initFromConfigBuilder
         , update
         , view
         , Difficulty(..)
+        , ConfigBuilder
+        , configBuilder
+        , setShuffleQuestions
         , setDifficulty
+        , setMaxQuestions
         )
 
 {-| A customizable quiz powered by Elm and Polymer
@@ -37,6 +42,10 @@ type Quiz
     = Quiz Model
 
 
+type ConfigBuilder
+    = ConfigBuilder Config
+
+
 type alias Model =
     { config : Config
     , game : Game
@@ -60,6 +69,7 @@ type alias Config =
     , shuffleQuestions : Bool
     , title : String
     , difficulty : Difficulty
+    , maxQuestions : Int
     }
 
 
@@ -110,6 +120,8 @@ You must always execute the returned commands.
 
 # Example of the config
 
+Only the "providedQuestions" is required.
+
     {
       "providedQuestions": [
         {
@@ -132,7 +144,9 @@ You must always execute the returned commands.
         }
       ],
       "shuffleQuestions": false,
-      "title": "Super epic title!"
+      "title": "Elm Quiz!",
+      "difficulty": "normal",
+      "maxQuestions: 10
     }
 
 
@@ -148,8 +162,8 @@ For a detailed example see
 @see example/src/elm/Main.elm
 
 -}
-init : Decode.Value -> ( Quiz, Cmd Msg )
-init configJson =
+initFromJson : Decode.Value -> ( Quiz, Cmd Msg )
+initFromJson configJson =
     let
         config =
             Decode.decodeValue configDecoder configJson
@@ -159,19 +173,32 @@ init configJson =
             |> wrapModel
 
 
-setDifficulty : Difficulty -> ( Quiz, Cmd Msg ) -> ( Quiz, Cmd Msg )
-setDifficulty difficulty ( Quiz model, cmd ) =
-    let
-        config =
-            model.config
+initFromConfigBuilder : ConfigBuilder -> ( Quiz, Cmd Msg )
+initFromConfigBuilder (ConfigBuilder config) =
+    createGame config
+        |> wrapModel
 
-        newConfig =
-            { config | difficulty = difficulty }
 
-        newModel =
-            { model | config = newConfig }
-    in
-        (Quiz newModel) ! [ cmd ]
+configBuilder : Decode.Value -> ConfigBuilder
+configBuilder configJson =
+    Decode.decodeValue configDecoder configJson
+        |> Result.withDefault defaultConfig
+        |> ConfigBuilder
+
+
+setShuffleQuestions : Bool -> ConfigBuilder -> ConfigBuilder
+setShuffleQuestions shuffleQuestions (ConfigBuilder config) =
+    ConfigBuilder { config | shuffleQuestions = shuffleQuestions }
+
+
+setDifficulty : Difficulty -> ConfigBuilder -> ConfigBuilder
+setDifficulty difficulty (ConfigBuilder config) =
+    ConfigBuilder { config | difficulty = difficulty }
+
+
+setMaxQuestions : Int -> ConfigBuilder -> ConfigBuilder
+setMaxQuestions maxQuestions (ConfigBuilder config) =
+    ConfigBuilder { config | maxQuestions = maxQuestions }
 
 
 {-| The quiz update function
@@ -200,7 +227,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
                 newGame =
                     { game
                         | state = AskingQuestionState firstQuestion
-                        , questionQueue = otherQuestions
+                        , questionQueue = List.take (config.maxQuestions - 1) otherQuestions
                     }
             in
                 { model | game = newGame } ! []
@@ -536,6 +563,7 @@ defaultConfig =
     , shuffleQuestions = False
     , title = "Elm Quiz!"
     , difficulty = Easy
+    , maxQuestions = 10
     }
 
 
@@ -600,7 +628,7 @@ createGame config =
                     )
 
                 ( False, firstQuestion :: otherQuestions ) ->
-                    ( { questionQueue = otherQuestions
+                    ( { questionQueue = List.take (config.maxQuestions - 1) otherQuestions
                       , answerHistory = []
                       , state = AskingQuestionState firstQuestion
                       }
@@ -642,6 +670,7 @@ configDecoder =
         |> optional "shuffleQuestions" Decode.bool False
         |> optional "title" Decode.string "Elm Quiz!"
         |> optional "difficulty" difficultyDecoder Normal
+        |> optional "maxQuestions" Decode.int 10
 
 
 questionsDecoder : Decoder (List Question)

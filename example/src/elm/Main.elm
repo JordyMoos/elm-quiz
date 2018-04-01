@@ -18,8 +18,11 @@ init : Decode.Value -> ( Model, Cmd Msg )
 init flags =
     let
         ( quiz, quizCmd ) =
-            Quiz.init flags
-                |> Quiz.setDifficulty Quiz.Normal
+            Quiz.configBuilder flags
+                |> Quiz.setDifficulty Quiz.Easy
+                |> Quiz.setMaxQuestions 2
+                |> Quiz.setShuffleQuestions True
+                |> Quiz.initFromConfigBuilder
     in
         { quiz = quiz } ! [ Cmd.map ToQuiz quizCmd ]
 
