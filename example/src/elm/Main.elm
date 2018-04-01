@@ -19,9 +19,9 @@ init flags =
     let
         ( quiz, quizCmd ) =
             Quiz.configBuilder flags
-                |> Quiz.setDifficulty Quiz.Easy
-                |> Quiz.setMaxQuestions 2
-                |> Quiz.setShuffleQuestions True
+                |> Quiz.setDifficulty Quiz.Impossible
+                --                |> Quiz.setMaxQuestions 2
+                --                |> Quiz.setShuffleQuestions True
                 |> Quiz.initFromConfigBuilder
     in
         { quiz = quiz } ! [ Cmd.map ToQuiz quizCmd ]

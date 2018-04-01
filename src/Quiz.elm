@@ -78,6 +78,8 @@ type alias Config =
 type Difficulty
     = Easy
     | Normal
+    | Hard
+    | Impossible
 
 
 type alias GuiState =
@@ -94,15 +96,25 @@ type alias Game =
 
 type alias AnsweredQuestion =
     { question : Question
-    , chosenAnswer : Maybe Answer -- You could skip the question
+    , chosenAnswer : ChosenAnswer
     }
+
+
+type alias CountDown =
+    Int
 
 
 type GameState
     = ShufflingQuestionsState
-    | AskingQuestionState Question
-    | ReviewAnswerState Question (Maybe Answer)
+    | AskingQuestionState Question (Maybe CountDown)
+    | ReviewAnswerState Question ChosenAnswer
     | ConclusionState
+
+
+type ChosenAnswer
+    = Answered Answer
+    | Skipped
+    | TimedOut
 
 
 {-| An opaque type representing messages that are passed inside the Quiz.
@@ -111,7 +123,7 @@ type Msg
     = NoOp
     | DrawerStatus Bool
     | ProvidingQuestions (List Question)
-    | ChosenAnswer (Maybe Answer)
+    | ChooseAnswer ChosenAnswer
     | NextQuestion
     | Restart
     | Tick Time.Time
@@ -229,23 +241,44 @@ innerUpdate msg ({ config, game, guiState } as model) =
             let
                 newGame =
                     { game
-                        | state = AskingQuestionState firstQuestion
+                        | state = AskingQuestionState firstQuestion (getCountDown model.config.difficulty)
                         , questionQueue = List.take (config.maxQuestions - 1) otherQuestions
                     }
             in
                 { model | game = newGame } ! []
 
-        ( ChosenAnswer maybeAnswer, AskingQuestionState question ) ->
+        ( Tick time, AskingQuestionState question (Just countDown) ) ->
+            let
+                newGame =
+                    case countDown of
+                        1 ->
+                            let
+                                answeredQuestion =
+                                    { question = question
+                                    , chosenAnswer = TimedOut
+                                    }
+                            in
+                                { game
+                                    | answerHistory = answeredQuestion :: model.game.answerHistory
+                                    , state = ReviewAnswerState question TimedOut
+                                }
+
+                        _ ->
+                            { game | state = AskingQuestionState question (Just (countDown - 1)) }
+            in
+                { model | game = newGame } ! []
+
+        ( ChooseAnswer chosenAnswer, AskingQuestionState question _ ) ->
             let
                 answeredQuestion =
                     { question = question
-                    , chosenAnswer = maybeAnswer
+                    , chosenAnswer = chosenAnswer
                     }
 
                 newGame =
                     { game
                         | answerHistory = answeredQuestion :: model.game.answerHistory
-                        , state = ReviewAnswerState question maybeAnswer
+                        , state = ReviewAnswerState question chosenAnswer
                     }
             in
                 { model | game = newGame } ! []
@@ -258,7 +291,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
                 newGameState =
                     case List.head game.questionQueue of
                         Just question ->
-                            AskingQuestionState question
+                            AskingQuestionState question (getCountDown model.config.difficulty)
 
                         Nothing ->
                             ConclusionState
@@ -282,7 +315,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
 subscriptions : Quiz -> Sub Msg
 subscriptions (Quiz model) =
     case model.game.state of
-        AskingQuestionState _ ->
+        AskingQuestionState _ (Just _) ->
             Time.every Time.second Tick
 
         _ ->
@@ -297,11 +330,11 @@ view (Quiz model) =
         ShufflingQuestionsState ->
             viewShufflingQuestions model
 
-        AskingQuestionState question ->
+        AskingQuestionState question maybeCountDown ->
             viewAskingQuestionState model question
 
-        ReviewAnswerState question maybeAnswer ->
-            viewReviewAnswerState model question maybeAnswer
+        ReviewAnswerState question chosenAnswer ->
+            viewReviewAnswerState model question chosenAnswer
 
         ConclusionState ->
             viewConclusionState model
@@ -403,7 +436,7 @@ viewAskingQuestionState model question =
 
 viewSkipButton : Html Msg
 viewSkipButton =
-    li [] [ paperButton (ChosenAnswer Nothing) "Skip" ]
+    li [] [ paperButton (ChooseAnswer Skipped) "Skip" ]
 
 
 viewAnswerButton : Difficulty -> Answer -> Html Msg
@@ -411,18 +444,18 @@ viewAnswerButton difficulty answer =
     li
         []
         [ answerButton
-            (ChosenAnswer (Just answer))
+            (ChooseAnswer (Answered answer))
             (getAnswerText answer)
             (getAnswerButtonClass difficulty answer)
         ]
 
 
-viewReviewAnswerState : Model -> Question -> Maybe Answer -> Html Msg
-viewReviewAnswerState model question maybeAnswer =
+viewReviewAnswerState : Model -> Question -> ChosenAnswer -> Html Msg
+viewReviewAnswerState model question chosenAnswer =
     let
         resultHtml =
-            case maybeAnswer of
-                Just (CorrectAnswer answer) ->
+            case chosenAnswer of
+                Answered (CorrectAnswer answer) ->
                     String.concat
                         [ "Your answer "
                         , "\""
@@ -432,7 +465,7 @@ viewReviewAnswerState model question maybeAnswer =
                         ]
                         |> text
 
-                Just (InvalidAnswer answer) ->
+                Answered (InvalidAnswer answer) ->
                     let
                         invalidAnswerMessage =
                             String.concat
@@ -473,8 +506,11 @@ viewReviewAnswerState model question maybeAnswer =
                             , p [] [ text correctAnswersMessage ]
                             ]
 
-                Nothing ->
+                Skipped ->
                     "You will not get points for skipping a question!" |> text
+
+                TimedOut ->
+                    "We are so sorry but you are out of time!" |> text
 
         nextButtonText =
             case List.head model.game.questionQueue of
@@ -503,7 +539,7 @@ viewConclusionState model =
             List.filter
                 (\answeredQuestion ->
                     case answeredQuestion.chosenAnswer of
-                        Just (CorrectAnswer _) ->
+                        Answered (CorrectAnswer _) ->
                             True
 
                         _ ->
@@ -516,7 +552,7 @@ viewConclusionState model =
             List.filter
                 (\answeredQuestion ->
                     case answeredQuestion.chosenAnswer of
-                        Just (InvalidAnswer _) ->
+                        Answered (InvalidAnswer _) ->
                             True
 
                         _ ->
@@ -529,7 +565,7 @@ viewConclusionState model =
             List.filter
                 (\answeredQuestion ->
                     case answeredQuestion.chosenAnswer of
-                        Nothing ->
+                        Skipped ->
                             True
 
                         _ ->
@@ -611,6 +647,19 @@ getAnswerButtonClass difficulty answer =
 --- Other helpers
 
 
+getCountDown : Difficulty -> Maybe CountDown
+getCountDown difficulty =
+    case difficulty of
+        Hard ->
+            Just 10
+
+        Impossible ->
+            Just 5
+
+        _ ->
+            Nothing
+
+
 wrapModel : ( Model, Cmd Msg ) -> ( Quiz, Cmd Msg )
 wrapModel ( model, cmd ) =
     ( Quiz model, cmd )
@@ -643,7 +692,7 @@ createGame config =
                 ( False, firstQuestion :: otherQuestions ) ->
                     ( { questionQueue = List.take (config.maxQuestions - 1) otherQuestions
                       , answerHistory = []
-                      , state = AskingQuestionState firstQuestion
+                      , state = AskingQuestionState firstQuestion (getCountDown config.difficulty)
                       }
                     , Cmd.none
                     )
