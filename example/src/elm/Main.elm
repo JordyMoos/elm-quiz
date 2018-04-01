@@ -19,6 +19,7 @@ init flags =
     let
         ( quiz, quizCmd ) =
             Quiz.init flags
+                |> Quiz.setDifficulty Quiz.Normal
     in
         { quiz = quiz } ! [ Cmd.map ToQuiz quizCmd ]
 

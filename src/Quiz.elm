@@ -5,6 +5,8 @@ module Quiz
         , init
         , update
         , view
+        , Difficulty(..)
+        , setDifficulty
         )
 
 {-| A customizable quiz powered by Elm and Polymer
@@ -155,6 +157,21 @@ init configJson =
     in
         createGame config
             |> wrapModel
+
+
+setDifficulty : Difficulty -> ( Quiz, Cmd Msg ) -> ( Quiz, Cmd Msg )
+setDifficulty difficulty ( Quiz model, cmd ) =
+    let
+        config =
+            model.config
+
+        newConfig =
+            { config | difficulty = difficulty }
+
+        newModel =
+            { model | config = newConfig }
+    in
+        (Quiz newModel) ! [ cmd ]
 
 
 {-| The quiz update function
