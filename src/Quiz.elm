@@ -6,6 +6,7 @@ module Quiz
         , initFromConfigBuilder
         , update
         , view
+        , subscriptions
         , Difficulty(..)
         , ConfigBuilder
         , configBuilder
@@ -34,6 +35,7 @@ import Random
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (decode, required, optional)
 import Maybe.Extra
+import Time
 
 
 {-| The Quiz model.
@@ -112,6 +114,7 @@ type Msg
     | ChosenAnswer (Maybe Answer)
     | NextQuestion
     | Restart
+    | Tick Time.Time
 
 
 {-| Initialize a Quiz given a config as Json.Decode.Value record.
@@ -274,6 +277,16 @@ innerUpdate msg ({ config, game, guiState } as model) =
         ( _, _ ) ->
             -- Void on bibs
             model ! []
+
+
+subscriptions : Quiz -> Sub Msg
+subscriptions (Quiz model) =
+    case model.game.state of
+        AskingQuestionState _ ->
+            Time.every Time.second Tick
+
+        _ ->
+            Sub.none
 
 
 {-| view

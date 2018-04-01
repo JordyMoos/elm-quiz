@@ -39,6 +39,11 @@ update msg ({ quiz } as model) =
                     ! [ Cmd.map ToQuiz newQuizCmd ]
 
 
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.map ToQuiz <| Quiz.subscriptions model.quiz
+
+
 view : Model -> Html Msg
 view ({ quiz } as model) =
     Quiz.view quiz
@@ -51,5 +56,5 @@ main =
         { init = init
         , update = update
         , view = view
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }
