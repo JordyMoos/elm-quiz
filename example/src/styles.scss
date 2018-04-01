@@ -77,6 +77,14 @@ paper-button.invalid {
     };
 }
 
+div.countdown-container {
+    margin: 0 0 30px 10px;
+}
+paper-fab.countdown {
+    --paper-fab-background: var(--paper-red-500);
+    cursor: default;
+}
+
 .continue-button-container {
     margin: 30px 0 0 0;
 }

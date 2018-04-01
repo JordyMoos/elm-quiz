@@ -79,6 +79,7 @@ type Difficulty
     = Easy
     | Normal
     | Hard
+    | Speedy
     | Impossible
 
 
@@ -331,7 +332,7 @@ view (Quiz model) =
             viewShufflingQuestions model
 
         AskingQuestionState question maybeCountDown ->
-            viewAskingQuestionState model question
+            viewAskingQuestionState model question maybeCountDown
 
         ReviewAnswerState question chosenAnswer ->
             viewReviewAnswerState model question chosenAnswer
@@ -415,8 +416,8 @@ viewShufflingQuestions model =
         []
 
 
-viewAskingQuestionState : Model -> Question -> Html Msg
-viewAskingQuestionState model question =
+viewAskingQuestionState : Model -> Question -> Maybe CountDown -> Html Msg
+viewAskingQuestionState model question maybeCountDown =
     let
         buttonList =
             case List.isEmpty question.answers of
@@ -425,12 +426,30 @@ viewAskingQuestionState model question =
 
                 False ->
                     List.map (viewAnswerButton model.config.difficulty) question.answers
+
+        countDownElement =
+            case maybeCountDown of
+                Just seconds ->
+                    div
+                        [ Attributes.class "countdown-container" ]
+                        [ node "paper-fab"
+                            [ attribute "noink" "noink"
+                            , Attributes.class "countdown"
+                            , attribute "label" <| toString seconds
+                            ]
+                            []
+                        ]
+
+                Nothing ->
+                    text ""
     in
         node "paper-card"
             [ attribute "heading" question.question ]
             [ div
                 [ Attributes.class "card-content" ]
-                [ ul [] buttonList ]
+                [ countDownElement
+                , ul [] buttonList
+                ]
             ]
 
 
@@ -441,13 +460,36 @@ viewSkipButton =
 
 viewAnswerButton : Difficulty -> Answer -> Html Msg
 viewAnswerButton difficulty answer =
-    li
-        []
-        [ answerButton
-            (ChooseAnswer (Answered answer))
-            (getAnswerText answer)
-            (getAnswerButtonClass difficulty answer)
-        ]
+    let
+        isDisabled =
+            case difficulty of
+                Impossible ->
+                    True
+
+                _ ->
+                    False
+
+        class =
+            case ( difficulty, answer ) of
+                ( Easy, CorrectAnswer _ ) ->
+                    "correct"
+
+                ( Easy, InvalidAnswer _ ) ->
+                    "invalid"
+
+                _ ->
+                    "default"
+    in
+        li
+            []
+            [ node "paper-button"
+                [ onClick <| ChooseAnswer (Answered answer)
+                , Attributes.class class
+                , Attributes.disabled isDisabled
+                , Attributes.attribute "raised" "raised"
+                ]
+                [ text <| getAnswerText answer ]
+            ]
 
 
 viewReviewAnswerState : Model -> Question -> ChosenAnswer -> Html Msg
@@ -573,6 +615,19 @@ viewConclusionState model =
                 )
                 model.game.answerHistory
                 |> List.length
+
+        timedOut =
+            List.filter
+                (\answeredQuestion ->
+                    case answeredQuestion.chosenAnswer of
+                        TimedOut ->
+                            True
+
+                        _ ->
+                            False
+                )
+                model.game.answerHistory
+                |> List.length
     in
         node "paper-card"
             [ attribute "heading" "Report" ]
@@ -583,6 +638,7 @@ viewConclusionState model =
                     [ li [] [ text <| "Correct: " ++ (toString correct) ]
                     , li [] [ text <| "Invalid: " ++ (toString invalid) ]
                     , li [] [ text <| "Skipped: " ++ (toString skipped) ]
+                    , li [] [ text <| "Timed out: " ++ (toString timedOut) ]
                     ]
                 , div
                     [ Attributes.class "continue-button-container" ]
@@ -630,19 +686,6 @@ getAnswerText answer =
             text
 
 
-getAnswerButtonClass : Difficulty -> Answer -> String
-getAnswerButtonClass difficulty answer =
-    case ( difficulty, answer ) of
-        ( Easy, CorrectAnswer _ ) ->
-            "correct"
-
-        ( Easy, InvalidAnswer _ ) ->
-            "invalid"
-
-        _ ->
-            "default"
-
-
 
 --- Other helpers
 
@@ -652,6 +695,9 @@ getCountDown difficulty =
     case difficulty of
         Hard ->
             Just 10
+
+        Speedy ->
+            Just 2
 
         Impossible ->
             Just 5
@@ -711,13 +757,11 @@ createGame config =
 
 paperButton : Msg -> String -> Html Msg
 paperButton msg content =
-    answerButton msg content "default"
-
-
-answerButton : Msg -> String -> String -> Html Msg
-answerButton msg content class =
     node "paper-button"
-        [ onClick msg, Attributes.class class, Attributes.attribute "raised" "raised" ]
+        [ onClick msg
+        , Attributes.class "default"
+        , Attributes.attribute "raised" "raised"
+        ]
         [ text content ]
 
 

@@ -12,6 +12,7 @@ import '../bower_components/paper-card/paper-card.html';
 import '../bower_components/paper-item/paper-icon-item.html';
 import '../bower_components/paper-item/paper-item.html';
 import '../bower_components/iron-icons/av-icons.html';
+import '../bower_components/paper-fab/paper-fab.html';
 
 
 let app = Elm.Main.fullscreen(Config);
