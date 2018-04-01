@@ -31,6 +31,9 @@ const common = {
         new CopyWebpackPlugin([{
             from: path.resolve(__dirname, 'bower_components/webcomponentsjs/*.js'),
             to: 'bower_components/webcomponentsjs/[name].[ext]'
+        }, {
+            from: path.resolve(__dirname, 'bower_components/web-animations-js/*.js'),
+            to: 'bower_components/web-animations-js/[name].[ext]'
         }])
     ],
     resolve: {
@@ -121,7 +124,10 @@ if (TARGET_ENV === 'development') {
                 },
                 {
                     test: /\.js$/,
-                    exclude: /node_modules/,
+                    exclude: [
+                      /node_modules/,
+                      /bower_components/
+                    ],
                     use: {
                         loader: 'babel-loader',
                         options: {

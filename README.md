@@ -13,20 +13,20 @@ elm-package install
 ## Run dev
 
 ```
-cd ./example
+cd ./example-simple
 yarn dev
 ```
 
 ## Build for prod
 
 ```
-cd ./example
+cd ./example-simple
 yarn prod
 ```
 
 ## How do i use this?
 
-See the example directory
+See the example-* directory
 
 
 ## DEMO TIME!
