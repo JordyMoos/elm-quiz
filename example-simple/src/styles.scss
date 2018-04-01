@@ -1,0 +1,105 @@
+body {
+    margin: 0;
+    font-family: 'Roboto', 'Noto', sans-serif;
+    background-color: #f1f1f1;
+}
+
+app-header {
+    background-color: #00897B;
+    color: #fff;
+}
+paper-icon-button {
+    --paper-icon-button-ink-color: white;
+}
+app-drawer-layout:not([narrow]) [drawer-toggle] {
+    display: none;
+}
+
+paper-card {
+    width:  100%;
+}
+main {
+    padding: 20px;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+li {
+    padding: 0;
+    margin: 10px;
+}
+
+paper-button {
+    --paper-button-ink-color: var(--paper-pink-a200);
+    --paper-button-flat-keyboard-focus: {
+        background-color: var(--paper-pink-a200);
+        color: white !important;
+    };
+    --paper-button-raised-keyboard-focus: {
+        background-color: var(--paper-pink-a200) !important;
+        color: white !important;
+    };
+}
+paper-button.default:hover {
+    background-color: var(--paper-indigo-100);
+}
+paper-button.default {
+    background-color: var(--paper-indigo-500);
+    color: white;
+    --paper-button-raised-keyboard-focus: {
+        background-color: var(--paper-pink-a200) !important;
+        color: white !important;
+    };
+}
+paper-button.correct:hover {
+    background-color: var(--paper-green-100);
+}
+paper-button.correct {
+    background-color: var(--paper-green-500);
+    color: white;
+    --paper-button-raised-keyboard-focus: {
+        background-color: var(--paper-pink-a200) !important;
+        color: white !important;
+    };
+}
+paper-button.invalid:hover {
+    background-color: var(--paper-red-100);
+}
+paper-button.invalid {
+    background-color: var(--paper-red-500);
+    color: white;
+    --paper-button-raised-keyboard-focus: {
+        background-color: var(--paper-pink-a200) !important;
+        color: white !important;
+    };
+}
+
+div.countdown-container {
+    margin: 0 0 30px 10px;
+}
+paper-fab.countdown {
+    --paper-fab-background: var(--paper-red-500);
+    cursor: default;
+}
+
+.continue-button-container {
+    margin: 30px 0 0 0;
+}
+
+
+.blueHeader {
+    background-color: #4285f4;
+    color: #fff;
+}
+.blueHeader paper-icon-button {
+    --paper-icon-button-ink-color: white;
+}
+.iconItem {
+    color: #666;
+}
+app-drawer-layout:not([narrow]) [drawer-toggle] {
+    display: none;
+}
