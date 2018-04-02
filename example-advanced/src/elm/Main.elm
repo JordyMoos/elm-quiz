@@ -16,7 +16,7 @@ type alias PrepareModel =
 
 type State
     = PrepareState PrepareModel
-    | GameState Quiz.Quiz
+    | QuizState Quiz.Quiz
 
 
 type alias Model =
@@ -41,17 +41,19 @@ init flags =
 type Msg
     = ToQuiz Quiz.Msg
     | SelectDifficulty Quiz.Difficulty
+    | SelectShuffleQuestions Bool
+    | StartQuiz
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ state, flags } as model) =
     case ( msg, state ) of
-        ( ToQuiz quizMsg, GameState quiz ) ->
+        ( ToQuiz quizMsg, QuizState quiz ) ->
             let
                 ( newQuizModel, newQuizCmd ) =
                     Quiz.update quizMsg quiz
             in
-                { model | state = GameState newQuizModel }
+                { model | state = QuizState newQuizModel }
                     ! [ Cmd.map ToQuiz newQuizCmd ]
 
         ( SelectDifficulty difficulty, PrepareState prepareModel ) ->
@@ -61,6 +63,23 @@ update msg ({ state, flags } as model) =
             in
                 { model | state = PrepareState newPrepareModel } ! []
 
+        ( SelectShuffleQuestions shuffleQuestions, PrepareState prepareModel ) ->
+            let
+                newPrepareModel =
+                    { prepareModel | shuffleQuestions = shuffleQuestions }
+            in
+                { model | state = PrepareState newPrepareModel } ! []
+
+        ( StartQuiz, PrepareState prepareModel ) ->
+            let
+                ( quiz, quizCmd ) =
+                    Quiz.configBuilder flags
+                        |> Quiz.setDifficulty prepareModel.difficulty
+                        |> Quiz.setShuffleQuestions prepareModel.shuffleQuestions
+                        |> Quiz.initFromConfigBuilder
+            in
+                { model | state = QuizState quiz } ! [ Cmd.map ToQuiz quizCmd ]
+
         ( _, _ ) ->
             model ! []
 
@@ -68,7 +87,7 @@ update msg ({ state, flags } as model) =
 subscriptions : Model -> Sub Msg
 subscriptions ({ state } as model) =
     case state of
-        GameState quiz ->
+        QuizState quiz ->
             Sub.map ToQuiz <| Quiz.subscriptions quiz
 
         _ ->
@@ -81,7 +100,7 @@ view ({ state } as model) =
         PrepareState prepareModel ->
             viewPrepareState prepareModel
 
-        GameState quiz ->
+        QuizState quiz ->
             Quiz.view quiz
                 |> Html.map ToQuiz
 
@@ -90,50 +109,84 @@ viewPrepareState : PrepareModel -> Html Msg
 viewPrepareState model =
     div
         [ Attributes.class "prepare-container" ]
-        [ node "paper-dropdown-menu"
-            [ attribute "label" "Difficulty"
-            , Events.on "value-changed"
-                (Decode.map SelectDifficulty
-                    ((Decode.at [ "detail", "value" ] Decode.string)
-                        |> Decode.andThen
-                            (\difficulty ->
-                                case difficulty of
-                                    "Easy" ->
-                                        Decode.succeed Quiz.Easy
-
-                                    "Normal" ->
-                                        Decode.succeed Quiz.Normal
-
-                                    "Hard" ->
-                                        Decode.succeed Quiz.Hard
-
-                                    "Speedy" ->
-                                        Decode.succeed Quiz.Speedy
-
-                                    "Impossible" ->
-                                        Decode.succeed Quiz.Impossible
-
-                                    _ ->
-                                        Decode.fail "Invalid value"
-                            )
-                    )
-                )
-
-            --                    , attribute "noAnimations" "noAnimations"
-            ]
-            [ node "paper-listbox"
-                [ Attributes.class "dropdown-content"
-                , attribute "slot" "dropdown-content"
-                , attribute "selected" <| getSelectedIndex model.difficulty
+        [ node "paper-card"
+            [ attribute "heading" "Configure the quiz!" ]
+            [ div
+                [ Attributes.class "card-content" ]
+                [ viewDifficulty model
+                , viewShuffleQuestions model
                 ]
-                [ node "paper-item" [] [ text <| describeDifficulty Quiz.Easy ]
-                , node "paper-item" [] [ text <| describeDifficulty Quiz.Normal ]
-                , node "paper-item" [] [ text <| describeDifficulty Quiz.Hard ]
-                , node "paper-item" [] [ text <| describeDifficulty Quiz.Speedy ]
-                , node "paper-item" [] [ text <| describeDifficulty Quiz.Impossible ]
-                ]
+            , div
+                [ Attributes.class "card-actions" ]
+                [ viewSubmitButton ]
             ]
         ]
+
+
+viewDifficulty : PrepareModel -> Html Msg
+viewDifficulty model =
+    node "paper-dropdown-menu"
+        [ attribute "label" "Difficulty"
+        , Events.on "value-changed"
+            (Decode.map SelectDifficulty
+                ((Decode.at [ "detail", "value" ] Decode.string)
+                    |> Decode.andThen
+                        (\difficulty ->
+                            case difficulty of
+                                "Easy" ->
+                                    Decode.succeed Quiz.Easy
+
+                                "Normal" ->
+                                    Decode.succeed Quiz.Normal
+
+                                "Hard" ->
+                                    Decode.succeed Quiz.Hard
+
+                                "Speedy" ->
+                                    Decode.succeed Quiz.Speedy
+
+                                "Impossible" ->
+                                    Decode.succeed Quiz.Impossible
+
+                                _ ->
+                                    Decode.fail "Invalid value"
+                        )
+                )
+            )
+        , attribute "noAnimations" "noAnimations"
+        ]
+        [ node "paper-listbox"
+            [ Attributes.class "dropdown-content"
+            , attribute "slot" "dropdown-content"
+            , attribute "selected" <| getSelectedIndex model.difficulty
+            ]
+            [ node "paper-item" [] [ text <| describeDifficulty Quiz.Easy ]
+            , node "paper-item" [] [ text <| describeDifficulty Quiz.Normal ]
+            , node "paper-item" [] [ text <| describeDifficulty Quiz.Hard ]
+            , node "paper-item" [] [ text <| describeDifficulty Quiz.Speedy ]
+            , node "paper-item" [] [ text <| describeDifficulty Quiz.Impossible ]
+            ]
+        ]
+
+
+viewShuffleQuestions : PrepareModel -> Html Msg
+viewShuffleQuestions model =
+    node "paper-checkbox"
+        [ Attributes.checked model.shuffleQuestions
+        , Events.on "checked-changed" <|
+            Decode.map SelectShuffleQuestions <|
+                Decode.at [ "detail", "value" ] Decode.bool
+        ]
+        [ text "Shuffle questions" ]
+
+
+viewSubmitButton : Html Msg
+viewSubmitButton =
+    node "paper-button"
+        [ Events.onClick StartQuiz
+        , Attributes.class "default"
+        ]
+        [ text "Start the quiz!" ]
 
 
 describeDifficulty : Quiz.Difficulty -> String

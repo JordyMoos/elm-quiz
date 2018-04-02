@@ -36,6 +36,7 @@
     "paper-fab": "PolymerElements/paper-fab#^2.1.0",
     "paper-dropdown-menu": "PolymerElements/paper-dropdown-menu#^2.1.0",
     "web-animations-js": "web-animations/web-animations-js#^2.2",
-    "paper-listbox": "PolymerElements/paper-listbox#^2.1.0"
+    "paper-listbox": "PolymerElements/paper-listbox#^2.1.0",
+    "paper-checkbox": "PolymerElements/paper-checkbox#^2.0.3"
   }
 }
