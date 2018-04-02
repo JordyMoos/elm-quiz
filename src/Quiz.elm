@@ -462,8 +462,8 @@ viewAnswerButton : Difficulty -> Answer -> Html Msg
 viewAnswerButton difficulty answer =
     let
         isDisabled =
-            case difficulty of
-                Impossible ->
+            case ( difficulty, answer ) of
+                ( Impossible, CorrectAnswer _ ) ->
                     True
 
                 _ ->
