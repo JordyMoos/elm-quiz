@@ -23,7 +23,9 @@ See the example on github.
 # Quiz
 
 @docs Msg, Quiz
-@docs init, update, view
+@docs initFromJson, initFromConfigBuilder, update, view, subscriptions
+@docs Difficulty
+@docs ConfigBuilder, configBuilder, setShuffleQuestions, setDifficulty, setMaxQuestions
 
 -}
 
@@ -44,6 +46,12 @@ type Quiz
     = Quiz Model
 
 
+{-| ConfigBuilder type allows you to make changes to the config.
+
+@see configBuilder
+@see setShuffleQuestions, setDifficulty, setMaxQuestions
+
+-}
 type ConfigBuilder
     = ConfigBuilder Config
 
@@ -75,6 +83,27 @@ type alias Config =
     }
 
 
+{-| Difficulty settings
+
+The difficulties are:
+`Easy`
+`Normal`
+`Hard`
+`Speedy`
+`Impossible`
+
+Difficulties can be set in the json config.
+The values are then the lower cased representation.
+
+        Easy -- "easy"
+        Normal -- "normal"
+        -- etc
+
+With setDifficulty you can set those difficulties:
+
+        Quiz.setDifficulty Quiz.Easy configBuilder
+
+-}
 type Difficulty
     = Easy
     | Normal
@@ -189,12 +218,25 @@ initFromJson configJson =
             |> wrapModel
 
 
+{-| Same as the initFromJson but now via a ConfigBuilder
+
+You must always execute the returned commands.
+
+@see ConfigBuilder
+
+-}
 initFromConfigBuilder : ConfigBuilder -> ( Quiz, Cmd Msg )
 initFromConfigBuilder (ConfigBuilder config) =
     createGame config
         |> wrapModel
 
 
+{-| Converts a valid quiz config from Json.Decode.Value to a ConfigBuilder.
+Which allows you to make changed to the config.
+
+@see initFromJson for an example Json.Decode.Value
+
+-}
 configBuilder : Decode.Value -> ConfigBuilder
 configBuilder configJson =
     Decode.decodeValue configDecoder configJson
@@ -202,16 +244,22 @@ configBuilder configJson =
         |> ConfigBuilder
 
 
+{-| Overwrite the shuffle questions configuration
+-}
 setShuffleQuestions : Bool -> ConfigBuilder -> ConfigBuilder
 setShuffleQuestions shuffleQuestions (ConfigBuilder config) =
     ConfigBuilder { config | shuffleQuestions = shuffleQuestions }
 
 
+{-| Overwrite the difficulty configuration
+-}
 setDifficulty : Difficulty -> ConfigBuilder -> ConfigBuilder
 setDifficulty difficulty (ConfigBuilder config) =
     ConfigBuilder { config | difficulty = difficulty }
 
 
+{-| Overwrite the max questions configuration
+-}
 setMaxQuestions : Int -> ConfigBuilder -> ConfigBuilder
 setMaxQuestions maxQuestions (ConfigBuilder config) =
     ConfigBuilder { config | maxQuestions = maxQuestions }
