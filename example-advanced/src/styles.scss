@@ -103,3 +103,10 @@ paper-fab.countdown {
 app-drawer-layout:not([narrow]) [drawer-toggle] {
     display: none;
 }
+
+div.difficulty {
+    margin: 0 0 20px 0;
+}
+div.shuffle-questions {
+    margin: 20px 0;
+}

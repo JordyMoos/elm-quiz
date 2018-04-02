@@ -107,14 +107,14 @@ view ({ state } as model) =
 
 viewPrepareState : PrepareModel -> Html Msg
 viewPrepareState model =
-    div
+    node "main"
         [ Attributes.class "prepare-container" ]
         [ node "paper-card"
             [ attribute "heading" "Configure the quiz!" ]
             [ div
                 [ Attributes.class "card-content" ]
-                [ viewDifficulty model
-                , viewShuffleQuestions model
+                [ div [ Attributes.class "difficulty" ] [ viewDifficulty model ]
+                , div [ Attributes.class "shuffle-questions" ] [ viewShuffleQuestions model ]
                 ]
             , div
                 [ Attributes.class "card-actions" ]
