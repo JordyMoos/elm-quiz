@@ -361,6 +361,11 @@ innerUpdate msg ({ config, game, guiState } as model) =
             model ! []
 
 
+{-| subscriptions
+
+Must always be connected else the countdown will not work.
+
+-}
 subscriptions : Quiz -> Sub Msg
 subscriptions (Quiz model) =
     case model.game.state of
