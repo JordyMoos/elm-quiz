@@ -19,6 +19,15 @@
       ]
     },
     {
+      "question": "Are correct answers disabled on the Impossible difficulty?",
+      "answers": [
+        { "type": "correct", "value": "Yes"},
+        { "type": "correct", "value": "It looks like it"},
+        { "type": "correct", "value": "That is right"},
+        { "type": "correct", "value": "Haha try to click me on Impossible difficulty"}
+      ]
+    },
+    {
       "question": "Is this a trick question?",
       "answers": [
         { "type": "correct", "value": "Yes"},
