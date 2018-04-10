@@ -11,6 +11,7 @@ module Quiz
         , ConfigBuilder
         , configBuilder
         , setShuffleQuestions
+        , setShuffleAnswers
         , setDifficulty
         , setMaxQuestions
         )
@@ -25,7 +26,7 @@ See the example on github.
 @docs Msg, Quiz
 @docs initFromJson, initFromConfigBuilder, update, view, subscriptions
 @docs Difficulty
-@docs ConfigBuilder, configBuilder, setShuffleQuestions, setDifficulty, setMaxQuestions
+@docs ConfigBuilder, configBuilder, setShuffleQuestions, setShuffleAnswers, setDifficulty, setMaxQuestions
 
 -}
 
@@ -49,7 +50,7 @@ type Quiz
 {-| ConfigBuilder type allows you to make changes to the config.
 
 @see configBuilder
-@see setShuffleQuestions, setDifficulty, setMaxQuestions
+@see setShuffleQuestions, setShuffleAnswers, setDifficulty, setMaxQuestions
 
 -}
 type ConfigBuilder
@@ -77,6 +78,7 @@ type alias Question =
 type alias Config =
     { providedQuestions : List Question
     , shuffleQuestions : Bool
+    , shuffleAnswers : Bool
     , title : String
     , difficulty : Difficulty
     , maxQuestions : Int
@@ -136,6 +138,7 @@ type alias CountDown =
 
 type GameState
     = ShufflingQuestionsState
+    | ShufflingAnswersState String (List Answer)
     | AskingQuestionState Question (Maybe CountDown)
     | ReviewAnswerState Question ChosenAnswer
     | ConclusionState
@@ -189,6 +192,7 @@ Only the "providedQuestions" is required.
         }
       ],
       "shuffleQuestions": false,
+      "shuffleAnswers": false,
       "title": "Elm Quiz!",
       "difficulty": "normal",
       "maxQuestions: 10
@@ -249,6 +253,13 @@ configBuilder configJson =
 setShuffleQuestions : Bool -> ConfigBuilder -> ConfigBuilder
 setShuffleQuestions shuffleQuestions (ConfigBuilder config) =
     ConfigBuilder { config | shuffleQuestions = shuffleQuestions }
+
+
+{-| Overwrite the shuffle answers configuration
+-}
+setShuffleAnswers : Bool -> ConfigBuilder -> ConfigBuilder
+setShuffleAnswers shuffleAnswers (ConfigBuilder config) =
+    ConfigBuilder { config | shuffleAnswers = shuffleAnswers }
 
 
 {-| Overwrite the difficulty configuration
@@ -719,6 +730,7 @@ defaultConfig =
           }
         ]
     , shuffleQuestions = False
+    , shuffleQuestions = False
     , title = "Elm Quiz!"
     , difficulty = Easy
     , maxQuestions = 10
@@ -827,6 +839,7 @@ configDecoder =
     decode Config
         |> required "providedQuestions" questionsDecoder
         |> optional "shuffleQuestions" Decode.bool False
+        |> optional "shuffleAnswers" Decode.bool False
         |> optional "title" Decode.string "Elm Quiz!"
         |> optional "difficulty" difficultyDecoder Normal
         |> optional "maxQuestions" Decode.int 10
