@@ -49,12 +49,21 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ state, flags } as model) =
     case ( msg, state ) of
         ( ToQuiz quizMsg, QuizState quiz ) ->
-            let
-                ( newQuizModel, newQuizCmd ) =
-                    Quiz.update quizMsg quiz
-            in
-                { model | state = QuizState newQuizModel }
-                    ! [ Cmd.map ToQuiz newQuizCmd ]
+            case Quiz.update quizMsg quiz of
+                ( Quiz.Active newQuizModel, newQuizCmd ) ->
+                    { model | state = QuizState (Quiz.Active newQuizModel) }
+                        ! [ Cmd.map ToQuiz newQuizCmd ]
+
+                ( Quiz.Stopped, _ ) ->
+                    { state =
+                        PrepareState <|
+                            { difficulty = Quiz.Normal
+                            , maxQuestions = Nothing
+                            , shuffleQuestions = False
+                            }
+                    , flags = flags
+                    }
+                        ! []
 
         ( SelectDifficulty difficulty, PrepareState prepareModel ) ->
             let

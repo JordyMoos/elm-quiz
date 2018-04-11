@@ -1,7 +1,7 @@
 module Quiz
     exposing
         ( Msg
-        , Quiz
+        , Quiz(..)
         , initFromJson
         , initFromConfigBuilder
         , update
@@ -44,7 +44,8 @@ import Time
 {-| The Quiz model.
 -}
 type Quiz
-    = Quiz Model
+    = Active Model
+    | Stopped
 
 
 {-| ConfigBuilder type allows you to make changes to the config.
@@ -160,6 +161,7 @@ type Msg
     | ChooseAnswer ChosenAnswer
     | NextQuestion
     | Restart
+    | Stop
     | Tick Time.Time
 
 
@@ -283,12 +285,16 @@ Do not forget to execute the returned command (same as for init)
 
 -}
 update : Msg -> Quiz -> ( Quiz, Cmd Msg )
-update msg (Quiz model) =
-    innerUpdate msg model
-        |> wrapModel
+update msg appState =
+    case appState of
+        Active model ->
+            innerUpdate msg model
+
+        Stopped ->
+            appState ! []
 
 
-innerUpdate : Msg -> Model -> ( Model, Cmd Msg )
+innerUpdate : Msg -> Model -> ( Quiz, Cmd Msg )
 innerUpdate msg ({ config, game, guiState } as model) =
     case ( msg, model.game.state ) of
         ( DrawerStatus status, _ ) ->
@@ -296,7 +302,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
                 newGuiState =
                     { guiState | drawerOpened = status }
             in
-                { model | guiState = newGuiState } ! []
+                { model | guiState = newGuiState } ! [] |> wrapModel
 
         ( ProvidingQuestions (question :: otherQuestions), ShufflingQuestionsState ) ->
             let
@@ -309,7 +315,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
                         , questionQueue = List.take (config.maxQuestions - 1) otherQuestions
                     }
             in
-                ( { model | game = newGame }, cmd )
+                ( { model | game = newGame }, cmd ) |> wrapModel
 
         ( ProvidingAnswers answers, ShufflingAnswersState question ) ->
             let
@@ -321,7 +327,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
                                 (getCountDown model.config.difficulty)
                     }
             in
-                { model | game = newGame } ! []
+                { model | game = newGame } ! [] |> wrapModel
 
         ( Tick time, AskingQuestionState question (Just countDown) ) ->
             let
@@ -342,7 +348,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
                         _ ->
                             { game | state = AskingQuestionState question (Just (countDown - 1)) }
             in
-                { model | game = newGame } ! []
+                { model | game = newGame } ! [] |> wrapModel
 
         ( ChooseAnswer chosenAnswer, AskingQuestionState question _ ) ->
             let
@@ -357,7 +363,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
                         , state = ReviewAnswerState question chosenAnswer
                     }
             in
-                { model | game = newGame } ! []
+                { model | game = newGame } ! [] |> wrapModel
 
         ( NextQuestion, ReviewAnswerState _ _ ) ->
             let
@@ -378,14 +384,17 @@ innerUpdate msg ({ config, game, guiState } as model) =
                         , state = newGameState
                     }
             in
-                ( { model | game = newGame }, cmd )
+                ( { model | game = newGame }, cmd ) |> wrapModel
 
         ( Restart, _ ) ->
-            createGame model.config
+            createGame model.config |> wrapModel
+
+        ( Stop, _ ) ->
+            Stopped ! []
 
         ( _, _ ) ->
             -- Void on bibs
-            model ! []
+            model ! [] |> wrapModel
 
 
 {-| subscriptions
@@ -394,36 +403,46 @@ Must always be connected else the countdown will not work.
 
 -}
 subscriptions : Quiz -> Sub Msg
-subscriptions (Quiz model) =
-    case model.game.state of
-        AskingQuestionState _ (Just _) ->
-            Time.every Time.second Tick
+subscriptions appState =
+    case appState of
+        Active model ->
+            case model.game.state of
+                AskingQuestionState _ (Just _) ->
+                    Time.every Time.second Tick
 
-        _ ->
+                _ ->
+                    Sub.none
+
+        Stopped ->
             Sub.none
 
 
 {-| view
 -}
 view : Quiz -> Html Msg
-view (Quiz model) =
-    (case model.game.state of
-        ShufflingQuestionsState ->
-            viewShufflingQuestions model
+view appState =
+    case appState of
+        Active model ->
+            (case model.game.state of
+                ShufflingQuestionsState ->
+                    viewShufflingQuestions model
 
-        ShufflingAnswersState question ->
-            viewShufflingAnswers model question
+                ShufflingAnswersState question ->
+                    viewShufflingAnswers model question
 
-        AskingQuestionState question maybeCountDown ->
-            viewAskingQuestionState model question maybeCountDown
+                AskingQuestionState question maybeCountDown ->
+                    viewAskingQuestionState model question maybeCountDown
 
-        ReviewAnswerState question chosenAnswer ->
-            viewReviewAnswerState model question chosenAnswer
+                ReviewAnswerState question chosenAnswer ->
+                    viewReviewAnswerState model question chosenAnswer
 
-        ConclusionState ->
-            viewConclusionState model
-    )
-        |> viewWrapInLayout model
+                ConclusionState ->
+                    viewConclusionState model
+            )
+                |> viewWrapInLayout model
+
+        Stopped ->
+            text ""
 
 
 viewWrapInLayout : Model -> Html Msg -> Html Msg
@@ -479,6 +498,11 @@ viewWrapInLayout { config, guiState } content =
                         [ Attributes.class "iconItem", onClick Restart ]
                         [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "av:fast-rewind", attribute "slot" "item-icon" ] []
                         , span [] [ text "Restart" ]
+                        ]
+                    , node "paper-icon-item"
+                        [ Attributes.class "iconItem", onClick Stop ]
+                        [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "av:stop", attribute "slot" "item-icon" ] []
+                        , span [] [ text "Stop" ]
                         ]
                     ]
                 ]
@@ -799,7 +823,7 @@ getCountDown difficulty =
 
 wrapModel : ( Model, Cmd Msg ) -> ( Quiz, Cmd Msg )
 wrapModel ( model, cmd ) =
-    ( Quiz model, cmd )
+    ( Active model, cmd )
 
 
 createGame : Config -> ( Model, Cmd Msg )
