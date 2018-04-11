@@ -11,6 +11,7 @@ module Quiz
         , ConfigBuilder
         , configBuilder
         , setShuffleQuestions
+        , setShuffleAnswers
         , setDifficulty
         , setMaxQuestions
         )
@@ -25,7 +26,7 @@ See the example on github.
 @docs Msg, Quiz
 @docs initFromJson, initFromConfigBuilder, update, view, subscriptions
 @docs Difficulty
-@docs ConfigBuilder, configBuilder, setShuffleQuestions, setDifficulty, setMaxQuestions
+@docs ConfigBuilder, configBuilder, setShuffleQuestions, setShuffleAnswers, setDifficulty, setMaxQuestions
 
 -}
 
@@ -49,7 +50,7 @@ type Quiz
 {-| ConfigBuilder type allows you to make changes to the config.
 
 @see configBuilder
-@see setShuffleQuestions, setDifficulty, setMaxQuestions
+@see setShuffleQuestions, setShuffleAnswers, setDifficulty, setMaxQuestions
 
 -}
 type ConfigBuilder
@@ -77,6 +78,7 @@ type alias Question =
 type alias Config =
     { providedQuestions : List Question
     , shuffleQuestions : Bool
+    , shuffleAnswers : Bool
     , title : String
     , difficulty : Difficulty
     , maxQuestions : Int
@@ -136,6 +138,7 @@ type alias CountDown =
 
 type GameState
     = ShufflingQuestionsState
+    | ShufflingAnswersState Question
     | AskingQuestionState Question (Maybe CountDown)
     | ReviewAnswerState Question ChosenAnswer
     | ConclusionState
@@ -153,6 +156,7 @@ type Msg
     = NoOp
     | DrawerStatus Bool
     | ProvidingQuestions (List Question)
+    | ProvidingAnswers (List Answer)
     | ChooseAnswer ChosenAnswer
     | NextQuestion
     | Restart
@@ -189,6 +193,7 @@ Only the "providedQuestions" is required.
         }
       ],
       "shuffleQuestions": false,
+      "shuffleAnswers": false,
       "title": "Elm Quiz!",
       "difficulty": "normal",
       "maxQuestions: 10
@@ -251,6 +256,13 @@ setShuffleQuestions shuffleQuestions (ConfigBuilder config) =
     ConfigBuilder { config | shuffleQuestions = shuffleQuestions }
 
 
+{-| Overwrite the shuffle answers configuration
+-}
+setShuffleAnswers : Bool -> ConfigBuilder -> ConfigBuilder
+setShuffleAnswers shuffleAnswers (ConfigBuilder config) =
+    ConfigBuilder { config | shuffleAnswers = shuffleAnswers }
+
+
 {-| Overwrite the difficulty configuration
 -}
 setDifficulty : Difficulty -> ConfigBuilder -> ConfigBuilder
@@ -286,12 +298,27 @@ innerUpdate msg ({ config, game, guiState } as model) =
             in
                 { model | guiState = newGuiState } ! []
 
-        ( ProvidingQuestions (firstQuestion :: otherQuestions), ShufflingQuestionsState ) ->
+        ( ProvidingQuestions (question :: otherQuestions), ShufflingQuestionsState ) ->
+            let
+                ( newGameState, cmd ) =
+                    determineNewQuestionState config question
+
+                newGame =
+                    { game
+                        | state = newGameState
+                        , questionQueue = List.take (config.maxQuestions - 1) otherQuestions
+                    }
+            in
+                ( { model | game = newGame }, cmd )
+
+        ( ProvidingAnswers answers, ShufflingAnswersState question ) ->
             let
                 newGame =
                     { game
-                        | state = AskingQuestionState firstQuestion (getCountDown model.config.difficulty)
-                        , questionQueue = List.take (config.maxQuestions - 1) otherQuestions
+                        | state =
+                            AskingQuestionState
+                                { question | answers = answers }
+                                (getCountDown model.config.difficulty)
                     }
             in
                 { model | game = newGame } ! []
@@ -337,13 +364,13 @@ innerUpdate msg ({ config, game, guiState } as model) =
                 newQuestionQueue =
                     List.tail game.questionQueue |> Maybe.withDefault []
 
-                newGameState =
+                ( newGameState, cmd ) =
                     case List.head game.questionQueue of
                         Just question ->
-                            AskingQuestionState question (getCountDown model.config.difficulty)
+                            determineNewQuestionState config question
 
                         Nothing ->
-                            ConclusionState
+                            ( ConclusionState, Cmd.none )
 
                 newGame =
                     { game
@@ -351,7 +378,7 @@ innerUpdate msg ({ config, game, guiState } as model) =
                         , state = newGameState
                     }
             in
-                { model | game = newGame } ! []
+                ( { model | game = newGame }, cmd )
 
         ( Restart, _ ) ->
             createGame model.config
@@ -383,6 +410,9 @@ view (Quiz model) =
     (case model.game.state of
         ShufflingQuestionsState ->
             viewShufflingQuestions model
+
+        ShufflingAnswersState question ->
+            viewShufflingAnswers model question
 
         AskingQuestionState question maybeCountDown ->
             viewAskingQuestionState model question maybeCountDown
@@ -466,6 +496,13 @@ viewShufflingQuestions : Model -> Html Msg
 viewShufflingQuestions model =
     node "paper-card"
         [ attribute "heading" "Preparing questions... please wait!" ]
+        []
+
+
+viewShufflingAnswers : Model -> Question -> Html Msg
+viewShufflingAnswers model question =
+    node "paper-card"
+        [ attribute "heading" "Preparing question... please wait!" ]
         []
 
 
@@ -719,6 +756,7 @@ defaultConfig =
           }
         ]
     , shuffleQuestions = False
+    , shuffleAnswers = False
     , title = "Elm Quiz!"
     , difficulty = Easy
     , maxQuestions = 10
@@ -788,13 +826,17 @@ createGame config =
                         |> Random.generate ProvidingQuestions
                     )
 
-                ( False, firstQuestion :: otherQuestions ) ->
-                    ( { questionQueue = List.take (config.maxQuestions - 1) otherQuestions
-                      , answerHistory = []
-                      , state = AskingQuestionState firstQuestion (getCountDown config.difficulty)
-                      }
-                    , Cmd.none
-                    )
+                ( False, question :: otherQuestions ) ->
+                    let
+                        ( gameState, cmd ) =
+                            determineNewQuestionState config question
+                    in
+                        ( { questionQueue = List.take (config.maxQuestions - 1) otherQuestions
+                          , answerHistory = []
+                          , state = gameState
+                          }
+                        , cmd
+                        )
     in
         ( { config = config
           , game = game
@@ -802,6 +844,21 @@ createGame config =
           }
         , cmd
         )
+
+
+determineNewQuestionState : Config -> Question -> ( GameState, Cmd Msg )
+determineNewQuestionState { shuffleAnswers, difficulty } question =
+    case shuffleAnswers of
+        True ->
+            ( ShufflingAnswersState question
+            , Random.List.shuffle question.answers
+                |> Random.generate ProvidingAnswers
+            )
+
+        False ->
+            ( AskingQuestionState question (getCountDown difficulty)
+            , Cmd.none
+            )
 
 
 
@@ -827,6 +884,7 @@ configDecoder =
     decode Config
         |> required "providedQuestions" questionsDecoder
         |> optional "shuffleQuestions" Decode.bool False
+        |> optional "shuffleAnswers" Decode.bool False
         |> optional "title" Decode.string "Elm Quiz!"
         |> optional "difficulty" difficultyDecoder Normal
         |> optional "maxQuestions" Decode.int 10
