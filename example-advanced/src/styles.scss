@@ -2,21 +2,14 @@ body {
     margin: 0;
     font-family: 'Roboto', 'Noto', sans-serif;
     background-color: #f1f1f1;
+    padding: 20px;
 }
 
-app-header {
-    background-color: #00897B;
-    color: #fff;
-}
 paper-icon-button {
     --paper-icon-button-ink-color: white;
 }
 app-drawer-layout:not([narrow]) [drawer-toggle] {
     display: none;
-}
-
-main {
-    padding: 20px;
 }
 
 ul {
@@ -86,19 +79,8 @@ paper-fab.countdown {
     margin: 30px 0 0 0;
 }
 
-
-.blueHeader {
-    background-color: #4285f4;
-    color: #fff;
-}
-.blueHeader paper-icon-button {
-    --paper-icon-button-ink-color: white;
-}
 .iconItem {
     color: #666;
-}
-app-drawer-layout:not([narrow]) [drawer-toggle] {
-    display: none;
 }
 
 div.difficulty {

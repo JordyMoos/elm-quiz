@@ -61,7 +61,6 @@ type ConfigBuilder
 type alias Model =
     { config : Config
     , game : Game
-    , guiState : GuiState
     }
 
 
@@ -80,7 +79,6 @@ type alias Config =
     { providedQuestions : List Question
     , shuffleQuestions : Bool
     , shuffleAnswers : Bool
-    , title : String
     , difficulty : Difficulty
     , maxQuestions : Int
     }
@@ -113,11 +111,6 @@ type Difficulty
     | Hard
     | Speedy
     | Impossible
-
-
-type alias GuiState =
-    { drawerOpened : Bool
-    }
 
 
 type alias Game =
@@ -154,9 +147,7 @@ type ChosenAnswer
 {-| An opaque type representing messages that are passed inside the Quiz.
 -}
 type Msg
-    = NoOp
-    | DrawerStatus Bool
-    | ProvidingQuestions (List Question)
+    = ProvidingQuestions (List Question)
     | ProvidingAnswers (List Answer)
     | ChooseAnswer ChosenAnswer
     | NextQuestion
@@ -196,7 +187,6 @@ Only the "providedQuestions" is required.
       ],
       "shuffleQuestions": false,
       "shuffleAnswers": false,
-      "title": "Elm Quiz!",
       "difficulty": "normal",
       "maxQuestions: 10
     }
@@ -295,15 +285,8 @@ update msg appState =
 
 
 innerUpdate : Msg -> Model -> ( Quiz, Cmd Msg )
-innerUpdate msg ({ config, game, guiState } as model) =
+innerUpdate msg ({ config, game } as model) =
     case ( msg, model.game.state ) of
-        ( DrawerStatus status, _ ) ->
-            let
-                newGuiState =
-                    { guiState | drawerOpened = status }
-            in
-                { model | guiState = newGuiState } ! [] |> wrapModel
-
         ( ProvidingQuestions (question :: otherQuestions), ShufflingQuestionsState ) ->
             let
                 ( newGameState, cmd ) =
@@ -423,7 +406,7 @@ view : Quiz -> Html Msg
 view appState =
     case appState of
         Active model ->
-            (case model.game.state of
+            case model.game.state of
                 ShufflingQuestionsState ->
                     viewShufflingQuestions model
 
@@ -438,82 +421,9 @@ view appState =
 
                 ConclusionState ->
                     viewConclusionState model
-            )
-                |> viewWrapInLayout model
 
         Stopped ->
             text ""
-
-
-viewWrapInLayout : Model -> Html Msg -> Html Msg
-viewWrapInLayout { config, guiState } content =
-    let
-        drawerOpenStatus =
-            case guiState.drawerOpened of
-                True ->
-                    [ attribute "opened" "opened" ]
-
-                False ->
-                    []
-
-        drawerAttributes =
-            List.append
-                drawerOpenStatus
-                [ Attributes.id "drawer"
-                , attribute "swipe-open" "swipe-open"
-                , onDrawerStatusChange
-                ]
-    in
-        div
-            []
-            [ node "app-header"
-                [ attribute "reveals" "reveals" ]
-                [ node "app-toolbar"
-                    []
-                    [ node "paper-icon-button" [ attribute "icon" "menu", onClick (DrawerStatus True) ] []
-                    , div [ attribute "main-title" "main-title" ] [ text config.title ]
-                    ]
-                ]
-            , Html.main_ [] [ content ]
-            , node "app-drawer"
-                drawerAttributes
-                [ node "app-header-layout"
-                    []
-                    [ node "app-header"
-                        [ Attributes.class "blueHeader"
-                        , attribute "waterfall" "waterfall"
-                        , attribute "fixed" "fixed"
-                        , attribute "slot" "header"
-                        ]
-                        [ node "app-toolbar"
-                            []
-                            [ div [ attribute "main-title" "main-title" ] [ text "Menu" ] ]
-                        ]
-                    , node "paper-icon-item"
-                        [ Attributes.class "iconItem", onClick (DrawerStatus False) ]
-                        [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "done", attribute "slot" "item-icon" ] []
-                        , span [] [ text "Questions" ]
-                        ]
-                    , node "paper-icon-item"
-                        [ Attributes.class "iconItem", onClick Restart ]
-                        [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "av:fast-rewind", attribute "slot" "item-icon" ] []
-                        , span [] [ text "Restart" ]
-                        ]
-                    , node "paper-icon-item"
-                        [ Attributes.class "iconItem", onClick Stop ]
-                        [ node "iron-icon" [ Attributes.class "grayIcon", attribute "icon" "av:stop", attribute "slot" "item-icon" ] []
-                        , span [] [ text "Stop" ]
-                        ]
-                    ]
-                ]
-            ]
-
-
-onDrawerStatusChange : Attribute Msg
-onDrawerStatusChange =
-    Events.on "opened-changed" <|
-        Decode.map DrawerStatus
-            (Decode.at [ "detail", "value" ] Decode.bool)
 
 
 viewShufflingQuestions : Model -> Html Msg
@@ -562,15 +472,6 @@ viewAskingQuestionState model question maybeCountDown =
             [ countDownElement
             , ul [] buttonList
             ]
-
-
-
-{-
-   <div class="card-actions">
-       <paper-button>Share</paper-button>
-       <paper-button>Explore!</paper-button>
-     </div>
--}
 
 
 viewCardActions : Html Msg
@@ -774,12 +675,6 @@ viewConclusionState model =
 --- Default stuff
 
 
-defaultGuiState : GuiState
-defaultGuiState =
-    { drawerOpened = False
-    }
-
-
 defaultConfig : Config
 defaultConfig =
     { providedQuestions =
@@ -790,7 +685,6 @@ defaultConfig =
         ]
     , shuffleQuestions = False
     , shuffleAnswers = False
-    , title = "Elm Quiz!"
     , difficulty = Easy
     , maxQuestions = 10
     }
@@ -873,7 +767,6 @@ createGame config =
     in
         ( { config = config
           , game = game
-          , guiState = defaultGuiState
           }
         , cmd
         )
@@ -895,7 +788,7 @@ determineNewQuestionState { shuffleAnswers, difficulty } question =
 
 
 
---- Webcomponent helpers
+--- WebComponent helpers
 
 
 paperButton : Msg -> String -> Html Msg
@@ -938,7 +831,6 @@ configDecoder =
         |> required "providedQuestions" questionsDecoder
         |> optional "shuffleQuestions" Decode.bool False
         |> optional "shuffleAnswers" Decode.bool False
-        |> optional "title" Decode.string "Elm Quiz!"
         |> optional "difficulty" difficultyDecoder Normal
         |> optional "maxQuestions" Decode.int 10
 
