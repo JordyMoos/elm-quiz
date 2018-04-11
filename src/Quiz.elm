@@ -518,14 +518,14 @@ onDrawerStatusChange =
 
 viewShufflingQuestions : Model -> Html Msg
 viewShufflingQuestions model =
-    node "paper-card"
+    card
         [ attribute "heading" "Preparing questions... please wait!" ]
         []
 
 
 viewShufflingAnswers : Model -> Question -> Html Msg
 viewShufflingAnswers model question =
-    node "paper-card"
+    card
         [ attribute "heading" "Preparing question... please wait!" ]
         []
 
@@ -557,14 +557,29 @@ viewAskingQuestionState model question maybeCountDown =
                 Nothing ->
                     text ""
     in
-        node "paper-card"
+        card
             [ attribute "heading" question.question ]
-            [ div
-                [ Attributes.class "card-content" ]
-                [ countDownElement
-                , ul [] buttonList
-                ]
+            [ countDownElement
+            , ul [] buttonList
             ]
+
+
+
+{-
+   <div class="card-actions">
+       <paper-button>Share</paper-button>
+       <paper-button>Explore!</paper-button>
+     </div>
+-}
+
+
+viewCardActions : Html Msg
+viewCardActions =
+    div
+        [ Attributes.class "card-actions" ]
+        [ cardAction Restart "Restart"
+        , cardAction Stop "Stop"
+        ]
 
 
 viewSkipButton : Html Msg
@@ -676,15 +691,12 @@ viewReviewAnswerState model question chosenAnswer =
                 Nothing ->
                     "Finish"
     in
-        node "paper-card"
+        card
             [ attribute "heading" ("Review: " ++ question.question) ]
-            [ div
-                [ Attributes.class "card-content" ]
-                [ p [] [ resultHtml ]
-                , div
-                    [ Attributes.class "continue-button-container" ]
-                    [ paperButton NextQuestion nextButtonText ]
-                ]
+            [ p [] [ resultHtml ]
+            , div
+                [ Attributes.class "continue-button-container" ]
+                [ paperButton NextQuestion nextButtonText ]
             ]
 
 
@@ -743,21 +755,18 @@ viewConclusionState model =
                 model.game.answerHistory
                 |> List.length
     in
-        node "paper-card"
+        card
             [ attribute "heading" "Report" ]
-            [ div
-                [ Attributes.class "card-content" ]
-                [ ul
-                    []
-                    [ li [] [ text <| "Correct: " ++ (toString correct) ]
-                    , li [] [ text <| "Invalid: " ++ (toString invalid) ]
-                    , li [] [ text <| "Skipped: " ++ (toString skipped) ]
-                    , li [] [ text <| "Timed out: " ++ (toString timedOut) ]
-                    ]
-                , div
-                    [ Attributes.class "continue-button-container" ]
-                    [ paperButton Restart "Try again!" ]
+            [ ul
+                []
+                [ li [] [ text <| "Correct: " ++ (toString correct) ]
+                , li [] [ text <| "Invalid: " ++ (toString invalid) ]
+                , li [] [ text <| "Skipped: " ++ (toString skipped) ]
+                , li [] [ text <| "Timed out: " ++ (toString timedOut) ]
                 ]
+            , div
+                [ Attributes.class "continue-button-container" ]
+                [ paperButton Restart "Try again!" ]
             ]
 
 
@@ -895,6 +904,26 @@ paperButton msg content =
         [ onClick msg
         , Attributes.class "default"
         , Attributes.attribute "raised" "raised"
+        ]
+        [ text content ]
+
+
+card : List (Attribute Msg) -> List (Html Msg) -> Html Msg
+card attributes contents =
+    node "paper-card"
+        attributes
+        [ div
+            [ Attributes.class "card-content" ]
+            contents
+        , viewCardActions
+        ]
+
+
+cardAction : Msg -> String -> Html Msg
+cardAction msg content =
+    node "paper-button"
+        [ onClick msg
+        , Attributes.class "card-action"
         ]
         [ text content ]
 
