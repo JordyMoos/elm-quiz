@@ -69,8 +69,13 @@ type Answer
     | InvalidAnswer String
 
 
+type AdditionalContent
+    = Image String
+
+
 type alias Question =
     { question : String
+    , additionalContent : List AdditionalContent
     , answers : List Answer
     }
 
@@ -168,6 +173,9 @@ Only the "providedQuestions" is required.
       "providedQuestions": [
         {
           "question": "Which nephew has a red hat?",
+          "additional_content": [
+            { "type": "image", "data": "https://s3.amazonaws.com/gs-geo-images/29d80404-5063-4ddd-9887-bb6f6a565588_l.jpg"}
+          ],
           "answers": [
             { "type": "correct", "value": "Huey"},
             { "type": "invalid", "value": "Dewey"},
@@ -466,12 +474,25 @@ viewAskingQuestionState model question maybeCountDown =
 
                 Nothing ->
                     text ""
+
+        additionalContents =
+            List.map viewAdditionalContent question.additionalContent
     in
         card
             [ attribute "heading" question.question ]
             [ countDownElement
+            , div [] additionalContents
             , ul [] buttonList
             ]
+
+
+viewAdditionalContent : AdditionalContent -> Html Msg
+viewAdditionalContent additionalContent =
+    case additionalContent of
+        Image src ->
+            div
+                [ Attributes.align "center" ]
+                [ img [ Attributes.src src ] [] ]
 
 
 viewCardActions : Html Msg
@@ -679,6 +700,7 @@ defaultConfig : Config
 defaultConfig =
     { providedQuestions =
         [ { question = "You configured the config wrong did not you?"
+          , additionalContent = []
           , answers =
                 [ CorrectAnswer "Yes I did" ]
           }
@@ -844,6 +866,7 @@ questionDecoder : Decoder Question
 questionDecoder =
     decode Question
         |> required "question" Decode.string
+        |> optional "additional_content" additionalContentsDecoder []
         |> required "answers" answersDecoder
 
 
@@ -863,6 +886,28 @@ answerDecoder =
 
                     _ ->
                         Decode.map InvalidAnswer (Decode.field "value" Decode.string)
+            )
+
+
+additionalContentsDecoder : Decoder (List AdditionalContent)
+additionalContentsDecoder =
+    Decode.list additionalContentDecoder
+
+
+additionalContentDecoder : Decoder AdditionalContent
+additionalContentDecoder =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\theType ->
+                case theType of
+                    "image" ->
+                        Decode.map Image (Decode.field "data" Decode.string)
+
+                    _ ->
+                        Decode.fail <|
+                            "Trying to decode additional_content, but type "
+                                ++ theType
+                                ++ " is not supported."
             )
 
 

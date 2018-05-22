@@ -2,6 +2,9 @@
   "providedQuestions": [
     {
       "question": "Which nephew has a red hat?",
+      "additional_content": [
+        { "type": "image", "data": "https://s3.amazonaws.com/gs-geo-images/29d80404-5063-4ddd-9887-bb6f6a565588_l.jpg"}
+      ],
       "answers": [
         { "type": "correct", "value": "Huey"},
         { "type": "invalid", "value": "Dewey"},
