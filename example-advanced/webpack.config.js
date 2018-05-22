@@ -34,6 +34,9 @@ const common = {
         }, {
             from: path.resolve(__dirname, 'bower_components/web-animations-js/*.js'),
             to: 'bower_components/web-animations-js/[name].[ext]'
+        }, {
+            from: path.resolve(__dirname, 'src/static/'),
+            to: 'static/'
         }])
     ],
     resolve: {

@@ -3,7 +3,7 @@
     {
       "question": "Which nephew has a red hat?",
       "additional_content": [
-        { "type": "image", "data": "https://s3.amazonaws.com/gs-geo-images/29d80404-5063-4ddd-9887-bb6f6a565588_l.jpg"}
+        { "type": "image", "data": "/static/question-1.jpg"}
       ],
       "answers": [
         { "type": "correct", "value": "Huey"},
